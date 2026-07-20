@@ -42,7 +42,9 @@ const runtime = {
   frameId: 0,
   pointerFrameId: 0,
   pointerX: 0,
-  pointerY: 0
+  pointerY: 0,
+  visualStateTimer: 0,
+  visualTargetId: "home"
 };
 
 const geometry = {
@@ -104,8 +106,8 @@ function renderNews() {
 
   newsList.innerHTML = visibleItems
     .map(
-      (item) => `
-        <li class="news-item">
+      (item, index) => `
+        <li class="news-item${index === 0 ? " news-item--lead" : ""}">
           <span class="news-item__marker" aria-hidden="true"></span>
           <div>
             <div class="news-item__date">${item.date}</div>
@@ -188,10 +190,43 @@ function bindNewsPager() {
 function renderMembers() {
   membersGrid.innerHTML = siteContent.members
     .map(
-      (member) => `
-        <article class="member-card" style="--avatar-hue: ${member.hue}">
-          <div class="member-card__portrait" aria-hidden="true">
-            <span class="member-card__portrait-tag">Portrait Slot</span>
+      (member) => {
+        const portraitStyle = [];
+
+        if (member.image) {
+          portraitStyle.push(`--portrait-image: url('${member.image}')`);
+        }
+
+        if (member.portraitPosition) {
+          portraitStyle.push(`--portrait-position: ${member.portraitPosition}`);
+        }
+
+        if (member.portraitBackdropPosition) {
+          portraitStyle.push(`--portrait-backdrop-position: ${member.portraitBackdropPosition}`);
+        }
+
+        if (member.portraitScale) {
+          portraitStyle.push(`--portrait-scale: ${member.portraitScale}`);
+        }
+
+        const portraitStyleAttribute = portraitStyle.length
+          ? ` style="${portraitStyle.join("; ")}"`
+          : "";
+
+        return `
+        <article class="member-card${member.image ? " member-card--has-image" : ""}" style="--avatar-hue: ${member.hue}">
+          <div class="member-card__portrait" aria-hidden="true"${portraitStyleAttribute}>
+            ${
+              member.image
+                ? `
+                  <div class="member-card__portrait-backdrop"></div>
+                  <div class="member-card__portrait-cutout">
+                    <img class="member-card__portrait-image" src="${member.image}" alt="${member.name}" loading="lazy" referrerpolicy="no-referrer" />
+                  </div>
+                `
+                : ""
+            }
+            <span class="member-card__portrait-tag">${member.group}</span>
             <span class="member-card__portrait-mark">${member.initials}</span>
           </div>
           <div class="member-card__content">
@@ -207,7 +242,8 @@ function renderMembers() {
             <p class="member-card__bio">${member.bio}</p>
           </div>
         </article>
-      `
+      `;
+      }
     )
     .join("");
 }
@@ -270,6 +306,40 @@ function bindActiveNavigation() {
     });
   };
 
+  const updatePageVisualState = (id, options = {}) => {
+    if (!pageVisual) {
+      return;
+    }
+
+    const immediate = options.immediate || prefersReducedMotion.matches || window.innerWidth <= 760;
+    const targetId = id || "home";
+
+    if (runtime.visualTargetId === targetId && !immediate) {
+      return;
+    }
+
+    runtime.visualTargetId = targetId;
+
+    if (runtime.visualStateTimer) {
+      window.clearTimeout(runtime.visualStateTimer);
+      runtime.visualStateTimer = 0;
+    }
+
+    if (immediate) {
+      pageVisual.dataset.visualPhase = "settled";
+      pageVisual.dataset.visualState = targetId;
+      return;
+    }
+
+    pageVisual.dataset.visualPhase = "rest";
+
+    runtime.visualStateTimer = window.setTimeout(() => {
+      pageVisual.dataset.visualState = targetId;
+      pageVisual.dataset.visualPhase = "settled";
+      runtime.visualStateTimer = 0;
+    }, 160);
+  };
+
   geometry.sections = sections.map((section) => ({
     id: section.dataset.section,
     offsetTop: section.offsetTop
@@ -288,6 +358,7 @@ function bindActiveNavigation() {
     if (currentId !== runtime.activeSectionId) {
       runtime.activeSectionId = currentId;
       setActive(currentId);
+      updatePageVisualState(currentId);
     }
   };
 
@@ -300,6 +371,7 @@ function bindActiveNavigation() {
   });
 
   updateActive();
+  updatePageVisualState(runtime.activeSectionId, { immediate: true });
   return updateActive;
 }
 

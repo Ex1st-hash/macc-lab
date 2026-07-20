@@ -6,14 +6,14 @@ export const siteContent = {
     acronym: "MACC",
     markLabel: "Multi-Agent Cognition and Collaboration",
     summary:
-      "A prototype academic homepage centered on multi-agent cognition, collaborative intelligence, and trustworthy foundation models. The records below are adapted from TrustFUL to simulate a live research environment while the visual system is refined."
+      "We investigate how multiple agents perceive, reason, and coordinate to build reliable intelligent systems across dynamic, distributed environments."
   },
   navigation: [
     { id: "home", label: "Home" },
     { id: "members", label: "Members" },
     { id: "publications", label: "Publications" },
     { id: "projects", label: "Projects" },
-    { id: "patents", label: "Patents" },
+    { id: "patents", label: "Systems" },
     { id: "awards", label: "Awards" }
   ],
   news: [
@@ -85,7 +85,11 @@ export const siteContent = {
       name: "Han Yu",
       role: "Investigator",
       group: "Investigators",
-      bio: "Selected from the TrustFUL investigators roster. The portrait slot is intentionally reserved for a formal cutout image.",
+      image: "https://trustful.federated-learning.org/Photos/hyu.png",
+      portraitPosition: "50% 22%",
+      portraitBackdropPosition: "50% 18%",
+      portraitScale: "1.06",
+      bio: "Works on trustworthy decision-making, agent collaboration, and human-centered intelligence in distributed settings.",
       href: "http://hanyu.sg/"
     },
     {
@@ -94,7 +98,11 @@ export const siteContent = {
       name: "Yang Liu",
       role: "Investigator",
       group: "Investigators",
-      bio: "Research profile adapted from the TrustFUL members page to test a dense but readable faculty presentation.",
+      image: "https://trustful.federated-learning.org/Photos/LY.jpg",
+      portraitPosition: "50% 18%",
+      portraitBackdropPosition: "50% 16%",
+      portraitScale: "1.12",
+      bio: "Focuses on secure machine learning, trustworthy systems, and robust collaborative intelligence.",
       href: "https://personal.ntu.edu.sg/yangliu/"
     },
     {
@@ -103,7 +111,11 @@ export const siteContent = {
       name: "Chunyan Miao",
       role: "Investigator",
       group: "Investigators",
-      bio: "This card keeps enough image area for a future portrait while preserving the academic rhythm of the grid.",
+      image: "https://trustful.federated-learning.org/Photos/MCY.png",
+      portraitPosition: "50% 18%",
+      portraitBackdropPosition: "50% 16%",
+      portraitScale: "1.11",
+      bio: "Studies agent reasoning, social intelligence, and computational models of collaboration at scale.",
       href: "https://scholar.google.com.sg/citations?user=fmXGRJgAAAAJ&hl=en"
     },
     {
@@ -112,7 +124,11 @@ export const siteContent = {
       name: "Dusit Niyato",
       role: "Investigator",
       group: "Investigators",
-      bio: "The first version prioritizes a realistic member density and a consistent portrait frame rather than raw headshots.",
+      image: "https://trustful.federated-learning.org/Photos/tao2020.jpg",
+      portraitPosition: "50% 20%",
+      portraitBackdropPosition: "50% 18%",
+      portraitScale: "1.1",
+      bio: "Explores communication-aware AI systems, learning over networks, and adaptive distributed optimization.",
       href: "https://personal.ntu.edu.sg/dniyato/"
     },
     {
@@ -121,7 +137,11 @@ export const siteContent = {
       name: "Rui Liu",
       role: "Research Fellow",
       group: "Research Staff",
-      bio: "Research staff entries use the same portrait-first structure so later content replacement does not affect layout.",
+      image: "https://trustful.federated-learning.org/Photos/LR.jpg",
+      portraitPosition: "50% 16%",
+      portraitBackdropPosition: "50% 14%",
+      portraitScale: "1.14",
+      bio: "Develops reliable learning methods for collaborative agents operating under shifting data and deployment constraints.",
       href: "https://sg.linkedin.com/in/rui-liu-cc"
     },
     {
@@ -130,7 +150,11 @@ export const siteContent = {
       name: "Chao Ren",
       role: "Wallenberg-NTU PPF",
       group: "Research Staff",
-      bio: "The supporting text stays concise so the card reads like a real academic personnel block rather than a social profile.",
+      image: "https://trustful.federated-learning.org/Photos/RenChao.jpg",
+      portraitPosition: "50% 18%",
+      portraitBackdropPosition: "50% 16%",
+      portraitScale: "1.12",
+      bio: "Investigates foundation models, decentralized adaptation, and efficient optimization across compound AI systems.",
       href: "https://rccccc-95.github.io/"
     },
     {
@@ -139,7 +163,11 @@ export const siteContent = {
       name: "Xiaoli Tang",
       role: "Research Fellow",
       group: "Research Staff",
-      bio: "This block uses real sample names and roles from TrustFUL while reserving the upper field for a final portrait treatment.",
+      image: "https://trustful.federated-learning.org/Photos/TangXiaoli.jpg",
+      portraitPosition: "50% 16%",
+      portraitBackdropPosition: "50% 14%",
+      portraitScale: "1.12",
+      bio: "Studies auction-based federated learning and coordination mechanisms for large-scale multi-agent environments.",
       href: "https://xiaoli543.github.io"
     },
     {
@@ -148,7 +176,11 @@ export const siteContent = {
       name: "Yansong Zhao",
       role: "PhD Student",
       group: "PhD Students",
-      bio: "Student cards are kept visually identical to senior profiles so the section scales cleanly when more members are added.",
+      image: "https://trustful.federated-learning.org/Photos/ZhaoYansong.jpg",
+      portraitPosition: "50% 18%",
+      portraitBackdropPosition: "50% 16%",
+      portraitScale: "1.1",
+      bio: "Works on cooperative intelligence, robust aggregation, and agent behaviors in distributed learning pipelines.",
       href: "https://sg.linkedin.com/in/bill-zhaoyansong"
     },
     {
@@ -157,7 +189,11 @@ export const siteContent = {
       name: "Hongyi Peng",
       role: "PhD Student",
       group: "PhD Students",
-      bio: "The image slot remains the dominant zone of the card, making it easy to replace placeholders with formal portraits later.",
+      image: "https://trustful.federated-learning.org/Photos/HongyiPeng.jpg",
+      portraitPosition: "50% 16%",
+      portraitBackdropPosition: "50% 14%",
+      portraitScale: "1.1",
+      bio: "Explores practical systems for trustworthy model collaboration and deployment-aware multi-agent coordination.",
       href: "https://sg.linkedin.com/in/hongyi-peng-63774a119"
     }
   ],
@@ -165,43 +201,43 @@ export const siteContent = {
     {
       meta: "2026 / Journal Article / IEEE Transactions on Mobile Computing",
       title: "Fisher-based layer-wise adaptive sparsification for efficient pruning of large language models",
-      summary: "Chuan Sun, Han Yu & Xiaoxiao Li. A representative large-model systems paper adapted from the TrustFUL publication list.",
+      summary: "A pruning framework that uses Fisher-informed layer sensitivity to remove redundant parameters from large language models while preserving downstream performance.",
       href: "https://ieeexplore.ieee.org/abstract/document/11501762"
     },
     {
       meta: "2025 / Survey / IEEE Communications Surveys and Tutorials",
       title: "Advances and open challenges in federated foundation models",
-      summary: "Chao Ren, Han Yu, Hongyi Peng and collaborators. A large-scale overview that brings foundation-model context into the publication section.",
+      summary: "A survey of federated foundation models that maps system design choices, privacy constraints, robustness concerns, and deployment barriers.",
       href: "https://ieeexplore.ieee.org/document/10930890"
     },
     {
       meta: "2025 / Journal Article / IEEE TKDE",
       title: "Ten challenging problems in federated foundation models",
-      summary: "Tao Fan, Hanlin Gu and a broad multi-institution team. Included here to stress how long real academic titles behave in the final layout.",
+      summary: "An agenda-setting paper outlining the theoretical and systems challenges that still limit federated foundation models in practice.",
       href: "https://ieeexplore.ieee.org/document/10944288"
     },
     {
       meta: "2025 / Journal Article / IEEE Internet of Things Journal",
       title: "Federated class-incremental learning via weighted aggregation and distillation",
-      summary: "Feng Wu, Alysa Tan, Siwei Feng, Han Yu and collaborators. This entry helps test dense citation rhythm in a live-like list.",
+      summary: "A class-incremental federated learning method that combines weighted aggregation and distillation to retain prior knowledge under evolving label spaces.",
       href: "https://ieeexplore.ieee.org/document/10937943"
     },
     {
       meta: "2025 / Journal Article / IEEE TNNLS",
       title: "Towards quantum federated learning",
-      summary: "Chao Ren, Rudai Yan, Huihui Zhu, Han Yu and collaborators. A second long citation tests pacing under deeper technical terminology.",
+      summary: "A forward-looking study examining how quantum techniques may intersect with federated learning at the algorithmic and systems levels.",
       href: "https://ieeexplore.ieee.org/document/10988887"
     },
     {
       meta: "2024 / Journal Article / IEEE Wireless Communications",
       title: "Generative AI for integrated sensing and communication: Insights from the physical layer perspective",
-      summary: "Jiacheng Wang, Hongyang Du, Dusit Niyato, Jiawen Kang, Shuguang Cui & Xuemin Shen. This keeps a broader generative-AI signal in view.",
+      summary: "A perspective on how generative AI can support integrated sensing and communication by coupling physical-layer signals with learned priors.",
       href: "https://ieeexplore.ieee.org/document/10599123"
     },
     {
       meta: "2024 / Journal Article / IEEE Internet of Things Journal",
       title: "Efficient large-scale personalizable bidding for multi-agent auction-based federated learning",
-      summary: "Xiaoli Tang & Han Yu. This entry is especially useful for testing long compound titles in a restrained academic interface.",
+      summary: "A scalable bidding framework for auction-based federated learning that personalizes incentives across many participating agents.",
       href: "https://ieeexplore.ieee.org/document/10522471"
     }
   ],
@@ -209,63 +245,63 @@ export const siteContent = {
     {
       title: "AnomSeer: Reinforcing multimodal LLMs to reason for time-series anomaly detection",
       meta: "Multimodal LLMs / Time Series / ICML 2026",
-      summary: "A project highlight from the TrustFUL projects page. It combines anomaly classification, localization, and explanation through grounded reasoning traces.",
+      summary: "A multimodal anomaly analysis framework that couples detection, localization, and explanation through grounded reasoning traces.",
       href: "https://trustful.federated-learning.org/projects.html"
     },
     {
       title: "Federated domain generalization for time-series classification via dynamics-to-domain generation",
       meta: "Federated Learning / Time Series / KDD 2026",
-      summary: "FedD2G treats domain shift through latent segment dynamics and expands sequence diversity without sharing raw signals.",
+      summary: "A federated domain generalization method that expands sequence diversity from latent dynamics without sharing raw data.",
       href: "https://trustful.federated-learning.org/projects.html"
     },
     {
       title: "FedDiG: Frequency-guided diffusion diversity for generalizable federated time series classification",
       meta: "Federated Learning / Diffusion / WWW 2026",
-      summary: "A diffusion-based framework that synthesizes diverse spectral patterns to improve federated domain generalization under small-data regimes.",
+      summary: "A diffusion-based approach that synthesizes diverse spectral patterns to strengthen federated time-series classification under domain shift.",
       href: "https://dl.acm.org/doi/10.1145/3774904.3792329"
     },
     {
       title: "Federated nonlinear causal discovery via divide-and-conquer learning",
       meta: "Causal Discovery / Federated Learning / KDD 2026",
-      summary: "DC-FNCD decomposes global structure learning into neighborhood-level tasks to reduce error propagation in distributed causal discovery.",
+      summary: "A divide-and-conquer framework for nonlinear federated causal discovery that reduces error propagation through neighborhood-level decomposition.",
       href: "https://trustful.federated-learning.org/projects.html"
     },
     {
       title: "A black-box optimization-based bidding strategy for data consumers in auction-based federated learning",
       meta: "Auction-based FL / Optimization / KDD 2026",
-      summary: "This project reforms AFL bidding as a black-box optimization problem and introduces a budget-aware exploration mechanism.",
+      summary: "A budget-aware bidding strategy that frames auction-based federated learning as a black-box optimization problem.",
       href: "https://trustful.federated-learning.org/projects.html"
     },
     {
       title: "TextResNet: Decoupling and routing optimization signals in compound AI systems via deep residual tuning",
       meta: "Foundation Models / Multi-Agent Systems / ICML 2026",
-      summary: "A compound-AI systems project from TrustFUL that reframes textual optimization with additive semantic deltas and causal routing.",
+      summary: "A compound-AI systems project that routes optimization signals through additive semantic deltas and residual textual tuning.",
       href: "https://github.com/JeanDiable/TextResNet"
     }
   ],
   patents: [
     {
       title: "Federated Learning Playground",
-      meta: "Structural Proxy / Interactive Platform",
-      summary: "The reference site has no patents page. This item is an applied-output proxy drawn from the same TrustFUL ecosystem to test the section in a realistic way.",
+      meta: "Interactive Platform / Federated Learning",
+      summary: "An interactive environment for demonstrating distributed model training, client participation, and collaborative optimization under realistic workflows.",
       href: "https://trustful.federated-learning.org/projects.html"
     },
     {
       title: "FedVision: An online visual object detection platform powered by federated learning",
-      meta: "Structural Proxy / Platform Prototype",
-      summary: "Used here as a stand-in for translational outputs. It preserves the density and reading pattern that a future patents list would need.",
+      meta: "Applied Vision System / Platform Prototype",
+      summary: "A user-facing detection platform that translates federated vision research into an operational AI system.",
       href: "https://trustful.federated-learning.org/projects.html"
     },
     {
       title: "FLAS: A platform for studying attacks on federated learning",
-      meta: "Structural Proxy / Security Tooling",
-      summary: "Adapted from the TrustFUL publication record to give the section a more applied, system-facing tone without inventing patent metadata.",
+      meta: "Security Tooling / Federated Learning",
+      summary: "A security-oriented environment for studying attacks, stress-testing federated pipelines, and validating defensive strategies.",
       href: "https://link.springer.com/chapter/10.1007/978-3-031-05061-9_12"
     },
     {
       title: "IBCA: An intelligent platform for social insurance benefit qualification status assessment",
-      meta: "Structural Proxy / Applied AI System",
-      summary: "This is another honest proxy: a real applied system from the reference corpus, used only because the source website does not expose patent records.",
+      meta: "Applied Assessment System / Public Service AI",
+      summary: "An intelligent assessment system showing how research methods can be operationalized in a real public-service workflow.",
       href: "https://ojs.aaai.org/index.php/AAAI/article/view/30316"
     }
   ],
@@ -279,25 +315,25 @@ export const siteContent = {
     {
       title: "Innovative Application of AI Award",
       meta: "Association for the Advancement of Artificial Intelligence / 2022",
-      summary: "Awarded for \"Contribution-Aware Federated Learning for Smart Healthcare.\" This helps test repeated award labels with different references.",
+      summary: "Recognized for contribution-aware federated learning methods designed for smart healthcare deployment scenarios.",
       href: "https://ojs.aaai.org/index.php/AAAI/article/view/21505"
     },
     {
       title: "Best Poster Runner-Up Award",
       meta: "Singapore ACM SIGKDD Symposium / 2023",
-      summary: "Recognized the paper \"Competitive-Cooperative Multi-Agent Reinforcement Learning for Auction-based Federated Learning.\"",
+      summary: "Honored for work on competitive-cooperative multi-agent reinforcement learning in auction-based federated learning.",
       href: "https://www.ijcai.org/proceedings/2023/474"
     },
     {
       title: "Excellent Paper Award",
       meta: "International Journal of Crowd Science / 2023",
-      summary: "Presented for \"Fairness in Design: A framework for facilitating ethical AI designs.\"",
+      summary: "Presented for a framework that supports fairness-aware design practices in ethical AI systems.",
       href: "https://trustful.federated-learning.org/awards.html"
     },
     {
       title: "Top 5 Most Popular Video Award",
       meta: "College of Engineering, NTU Singapore / 2022",
-      summary: "Presented for \"Trust-based Open Collaborative Federated Learning,\" giving the section a realistic mix of paper and outreach recognition.",
+      summary: "Presented for a public-facing research communication piece on trust-based open collaborative federated learning.",
       href: "https://trustful.federated-learning.org/awards.html"
     }
   ]

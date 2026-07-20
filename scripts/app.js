@@ -483,14 +483,12 @@ function bindFooterObserverField() {
     rafId: 0,
     resizeObserver: null,
     intersectionObserver: null,
-    worldWidth: 0,
-    worldHeight: 0,
     columns: 0,
     rows: 0,
     xGap: 0,
     yGap: 0,
-    bufferColumns: 3,
-    perspective: 360,
+    bufferColumns: 2,
+    perspective: 780,
     drift: 0,
     tickTime: 0,
     lastTime: 0,
@@ -508,47 +506,60 @@ function bindFooterObserverField() {
   const clampInt = (value, min, max) => Math.min(Math.max(value, min), max);
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
   const mix = (a, b, t) => a + (b - a) * t;
-
-  const wrap = (value, span) => {
-    if (span <= 0) {
-      return value;
+  const tau = Math.PI * 2;
+  const addEdge = (edgeSet, source, target, weight) => {
+    const key = source < target ? `${source}:${target}` : `${target}:${source}`;
+    if (edgeSet.has(key)) {
+      return;
     }
-    return ((value % span) + span) % span;
+
+    edgeSet.add(key);
+    field.edges.push([source, target, weight]);
   };
 
   const rebuildField = () => {
     field.nodes = [];
     field.edges = [];
-    const visibleColumns = clampInt(Math.round(field.width / 64), 18, 28);
-    field.rows = clampInt(Math.round(field.height / 24), 5, 7);
+    const edgeSet = new Set();
+    const visibleColumns = clampInt(Math.round(field.width / 72), 18, 28);
+    field.rows = clampInt(Math.round(field.height / 22), 6, 8);
     field.xGap = field.width / Math.max(visibleColumns - 1, 1);
-    field.columns = visibleColumns;
-    field.columns += field.bufferColumns * 2;
-    field.worldWidth = field.xGap * field.columns;
-    field.worldHeight = Math.max(field.height * 1.28, field.rows * 30);
-    field.yGap = field.worldHeight / Math.max(field.rows - 1, 1);
-    const spanLeft = -field.width * 0.5 - field.bufferColumns * field.xGap;
+    field.yGap = field.height / Math.max(field.rows - 1, 1);
+    field.columns = visibleColumns + field.bufferColumns * 2;
+    const startX = -field.bufferColumns * field.xGap;
+    const startY = 0;
 
     for (let row = 0; row < field.rows; row += 1) {
       const rowRatio = field.rows === 1 ? 0.5 : row / (field.rows - 1);
 
       for (let col = 0; col < field.columns; col += 1) {
         const colRatio = col / Math.max(field.columns - 1, 1);
-        const lateralWave = Math.sin(colRatio * Math.PI * 2.1 + row * 0.44) * 7;
-        const verticalWave = Math.sin(col * 0.56 + row * 0.82) * 4.8;
+        const stagger =
+          (row % 2 === 0 ? 1 : -1) * field.xGap * (0.12 + 0.03 * Math.sin(row * 0.86 + colRatio * 3.1));
+        const rowSkew = Math.sin((rowRatio - 0.5) * Math.PI) * field.xGap * 0.14;
+        const warpX =
+          Math.sin(colRatio * tau * 0.94 + row * 0.53) * 10.5 +
+          Math.cos(col * 0.47 - row * 0.37) * 5.8 +
+          Math.sin((col + row) * 0.18) * 3.8;
+        const baseY =
+          startY +
+          row * field.yGap +
+          Math.sin(col * 0.31 + row * 0.82) * 5.8 +
+          Math.cos(colRatio * tau * 1.18 - row * 0.44) * 3.6 +
+          Math.sin((col - row) * 0.26) * 2.4 +
+          Math.sin(colRatio * Math.PI * 1.15) * (rowRatio - 0.5) * 9.5;
 
         field.nodes.push({
-          baseX: spanLeft + col * field.xGap + lateralWave,
-          baseY: row * field.yGap - field.worldHeight * 0.5 + verticalWave,
-          radius: 1.55 + Math.random() * 1.4,
+          baseX: startX + col * field.xGap + stagger + rowSkew + warpX,
+          baseY,
+          radius: 1.35 + Math.random() * 1.08,
           phaseA: Math.random() * Math.PI * 2,
           phaseB: Math.random() * Math.PI * 2,
           phaseZ: Math.random() * Math.PI * 2,
-          waveX: 3 + Math.random() * 9,
-          waveY: 4 + Math.random() * 8,
-          waveZ: 16 + Math.random() * 28,
-          depthBias: mix(-34, 148, rowRatio * 0.5 + Math.random() * 0.5),
-          driftFactor: 0.72 + Math.random() * 0.58,
+          offsetX: 1.8 + Math.random() * 4.4,
+          offsetY: 2.1 + Math.random() * 4.2,
+          depthWave: 14 + Math.random() * 18,
+          depthBias: mix(-12, 76, rowRatio * 0.68 + Math.random() * 0.18),
           bias: 0.55 + Math.random() * 0.45
         });
       }
@@ -561,67 +572,82 @@ function bindFooterObserverField() {
         const source = nodeIndex(row, col);
 
         if (col < field.columns - 1) {
-          field.edges.push([source, nodeIndex(row, col + 1), 0.84]);
+          addEdge(edgeSet, source, nodeIndex(row, col + 1), 0.82);
         }
 
         if (row < field.rows - 1) {
-          field.edges.push([source, nodeIndex(row + 1, col), 0.66]);
+          addEdge(edgeSet, source, nodeIndex(row + 1, col), 0.64);
 
-          if (col < field.columns - 1 && ((row + col) % 2 === 0 || Math.random() > 0.34)) {
-            field.edges.push([source, nodeIndex(row + 1, col + 1), 0.56]);
+          if (col < field.columns - 1) {
+            if ((row + col) % 2 === 0) {
+              addEdge(edgeSet, source, nodeIndex(row + 1, col + 1), 0.58);
+            } else {
+              addEdge(edgeSet, nodeIndex(row, col + 1), nodeIndex(row + 1, col), 0.58);
+            }
           }
         }
 
-        if (row > 0 && col < field.columns - 1 && ((row + col) % 3 === 0 || Math.random() > 0.68)) {
-          field.edges.push([source, nodeIndex(row - 1, col + 1), 0.46]);
-        }
-
-        if (col < field.columns - 2 && ((row + col) % 2 === 0 || Math.random() > 0.58)) {
-          field.edges.push([source, nodeIndex(row, col + 2), 0.28]);
+        if (col < field.columns - 2 && row < field.rows - 1 && (row + col) % 3 === 0) {
+          addEdge(edgeSet, source, nodeIndex(row, col + 2), 0.24);
         }
       }
     }
 
     field.energyClusters = [
       {
-        x: field.width * 0.08,
-        yRatio: 0.44,
-        speed: field.width * 0.028,
-        radiusX: field.width * 0.095,
-        radiusY: field.height * 0.52,
-        strength: 0.84,
+        x: field.width * 0.04,
+        yRatio: 0.3,
+        speed: field.width * 0.022,
+        radiusX: field.width * 0.11,
+        radiusY: field.height * 0.34,
+        strength: 0.74,
         phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.08
+        sway: field.height * 0.1,
+        angle: -0.2
       },
       {
-        x: field.width * 0.36,
-        yRatio: 0.58,
-        speed: field.width * 0.019,
-        radiusX: field.width * 0.13,
-        radiusY: field.height * 0.46,
+        x: field.width * 0.23,
+        yRatio: 0.68,
+        speed: field.width * 0.017,
+        radiusX: field.width * 0.12,
+        radiusY: field.height * 0.27,
         strength: 0.62,
         phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.11
+        sway: field.height * 0.08,
+        angle: 0.18
       },
       {
-        x: field.width * 0.68,
-        yRatio: 0.40,
-        speed: field.width * 0.024,
-        radiusX: field.width * 0.11,
-        radiusY: field.height * 0.48,
-        strength: 0.71,
+        x: field.width * 0.48,
+        yRatio: 0.45,
+        speed: field.width * 0.02,
+        radiusX: field.width * 0.105,
+        radiusY: field.height * 0.3,
+        strength: 0.7,
         phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.07
+        sway: field.height * 0.09,
+        angle: -0.1
+      },
+      {
+        x: field.width * 0.71,
+        yRatio: 0.61,
+        speed: field.width * 0.018,
+        radiusX: field.width * 0.115,
+        radiusY: field.height * 0.29,
+        strength: 0.66,
+        phase: Math.random() * Math.PI * 2,
+        sway: field.height * 0.08,
+        angle: 0.15
       },
       {
         x: field.width * 0.92,
-        yRatio: 0.54,
-        speed: field.width * 0.016,
-        radiusX: field.width * 0.09,
-        radiusY: field.height * 0.42,
-        strength: 0.58,
+        yRatio: 0.36,
+        speed: field.width * 0.021,
+        radiusX: field.width * 0.1,
+        radiusY: field.height * 0.32,
+        strength: 0.72,
         phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.06
+        sway: field.height * 0.09,
+        angle: -0.22
       }
     ];
   };
@@ -649,41 +675,48 @@ function bindFooterObserverField() {
 
   const computeNodePositions = (timeMs) => {
     const positions = [];
-    const span = field.worldWidth;
+    const span = field.xGap * Math.max(field.columns - 1, 1);
 
     for (const node of field.nodes) {
-      const wrappedX =
-        wrap(node.baseX + field.drift * node.driftFactor + field.worldWidth * 0.5, span) -
-        field.worldWidth * 0.5;
-      const worldX =
-        wrappedX +
-        Math.sin(timeMs * 0.00021 + node.phaseA) * node.waveX +
-        Math.sin(timeMs * 0.00043 + node.phaseB) * 0.9;
+      let worldX = node.baseX + field.drift;
+      while (worldX < -field.bufferColumns * field.xGap) {
+        worldX += span;
+      }
+      while (worldX > field.width + field.bufferColumns * field.xGap) {
+        worldX -= span;
+      }
+
+      worldX +=
+        Math.sin(timeMs * 0.00018 + node.phaseA) * node.offsetX +
+        Math.cos(timeMs * 0.00029 + node.phaseB) * 0.8;
       const worldY =
         node.baseY +
-        Math.sin(timeMs * 0.00023 + node.phaseB) * node.waveY +
-        Math.cos(timeMs * 0.00037 + node.phaseA) * 1.8;
+        Math.sin(timeMs * 0.00022 + node.phaseB) * node.offsetY +
+        Math.cos(timeMs * 0.00031 + node.phaseA) * 1.1;
       const z =
         node.depthBias +
-        Math.sin(timeMs * 0.00018 + node.phaseZ) * node.waveZ +
-        Math.cos(timeMs * 0.00041 + node.phaseA) * 5.4;
+        Math.sin(timeMs * 0.00017 + node.phaseZ) * node.depthWave +
+        Math.cos(timeMs * 0.00026 + node.phaseA) * 4.6;
       const perspective = field.perspective / (field.perspective + z);
-      const x = field.width * 0.5 + worldX * perspective;
-      const y =
-        field.height * 0.5 +
-        worldY * perspective +
-        Math.sin(timeMs * 0.00016 + node.phaseZ + worldX * 0.0045) * 1.25;
+      const centeredX = worldX - field.width * 0.5;
+      const centeredY = worldY - field.height * 0.5;
+      const x = field.width * 0.5 + centeredX * perspective;
+      const y = field.height * 0.5 + centeredY * perspective;
 
       let energy = 0;
       for (const cluster of field.energyClusters) {
         const clusterY =
           field.height * cluster.yRatio +
-          Math.sin(timeMs * 0.00032 + cluster.phase) * cluster.sway;
+          Math.sin(timeMs * 0.0003 + cluster.phase) * cluster.sway;
         const dx = x - cluster.x;
         const dy = y - clusterY;
-        const breath = 0.72 + 0.28 * Math.sin(timeMs * 0.0012 + cluster.phase);
-        const horizontal = (dx * dx) / (2 * cluster.radiusX * cluster.radiusX);
-        const vertical = (dy * dy) / (2 * cluster.radiusY * cluster.radiusY);
+        const cosAngle = Math.cos(cluster.angle);
+        const sinAngle = Math.sin(cluster.angle);
+        const localX = dx * cosAngle + dy * sinAngle;
+        const localY = -dx * sinAngle + dy * cosAngle;
+        const breath = 0.68 + 0.32 * Math.sin(timeMs * 0.0013 + cluster.phase);
+        const horizontal = (localX * localX) / (2 * cluster.radiusX * cluster.radiusX);
+        const vertical = (localY * localY) / (2 * cluster.radiusY * cluster.radiusY);
         energy += cluster.strength * breath * Math.exp(-(horizontal + vertical));
       }
 
@@ -692,15 +725,44 @@ function bindFooterObserverField() {
         y,
         z,
         perspective,
-        radius: node.radius * perspective + energy * 1.15,
+        radius: node.radius * perspective + energy * 0.92,
         energy,
         bias: node.bias,
-        depthAlpha: mix(0.3, 0.98, clamp(1 - (z + 48) / 248, 0, 1)),
-        shimmer: 0.34 + 0.28 * Math.sin(timeMs * 0.0011 + node.phaseA)
+        depthAlpha: mix(0.34, 0.96, clamp(1 - (z + 18) / 138, 0, 1)),
+        shimmer: 0.28 + 0.2 * Math.sin(timeMs * 0.001 + node.phaseA)
       });
     }
 
     return positions;
+  };
+
+  const drawCluster = (cluster, timeMs, forceStatic = false) => {
+    const ctx = field.context;
+    const clusterY =
+      field.height * cluster.yRatio +
+      Math.sin((forceStatic ? 0 : timeMs) * 0.0003 + cluster.phase) * cluster.sway;
+    const breath = 0.7 + 0.3 * Math.sin((forceStatic ? 0 : timeMs) * 0.0013 + cluster.phase);
+    const radiusX = cluster.radiusX * (0.88 + breath * 0.22);
+    const radiusY = cluster.radiusY * (0.92 + breath * 0.18);
+
+    ctx.save();
+    ctx.translate(cluster.x, clusterY);
+    ctx.rotate(cluster.angle);
+
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radiusX);
+    gradient.addColorStop(0, `rgba(250, 252, 255, ${(0.2 * cluster.strength * breath).toFixed(3)})`);
+    gradient.addColorStop(0.42, `rgba(241, 247, 249, ${(0.11 * cluster.strength * breath).toFixed(3)})`);
+    gradient.addColorStop(1, "rgba(241, 247, 249, 0)");
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, tau);
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${(0.06 * cluster.strength * breath).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.ellipse(radiusX * 0.14, 0, radiusX * 0.34, radiusY * 0.48, 0, 0, tau);
+    ctx.fill();
+    ctx.restore();
   };
 
   function drawField(timeMs, forceStatic = false) {
@@ -722,25 +784,7 @@ function bindFooterObserverField() {
     ).length;
 
     for (const cluster of field.energyClusters) {
-      const clusterY =
-        field.height * cluster.yRatio +
-        Math.sin((forceStatic ? 0 : timeMs) * 0.00032 + cluster.phase) * cluster.sway;
-      const breath = 0.72 + 0.28 * Math.sin((forceStatic ? 0 : timeMs) * 0.0012 + cluster.phase);
-      const radiusX = cluster.radiusX * (0.88 + breath * 0.18);
-      const radiusY = cluster.radiusY * (0.9 + breath * 0.16);
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(cluster.x, clusterY, radiusX, radiusY, cluster.phase * 0.12, 0, Math.PI * 2);
-      ctx.clip();
-
-      const gradient = ctx.createRadialGradient(cluster.x, clusterY, 0, cluster.x, clusterY, radiusX);
-      gradient.addColorStop(0, `rgba(248, 250, 252, ${(0.16 * cluster.strength * breath).toFixed(3)})`);
-      gradient.addColorStop(0.38, `rgba(238, 244, 246, ${(0.08 * cluster.strength * breath).toFixed(3)})`);
-      gradient.addColorStop(1, "rgba(238, 244, 246, 0)");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(cluster.x - radiusX, clusterY - radiusY, radiusX * 2, radiusY * 2);
-      ctx.restore();
+      drawCluster(cluster, timeMs, forceStatic);
     }
 
     for (const [sourceIndex, targetIndex, weight] of field.edges) {
@@ -762,18 +806,18 @@ function bindFooterObserverField() {
         continue;
       }
 
-      if (Math.abs(dy) > field.yGap * 2.45 || depthDelta > 168 || screenDistance > field.xGap * 2.7) {
+      if (Math.abs(dy) > field.yGap * 1.92 || depthDelta > 96 || screenDistance > field.xGap * 2.08) {
         continue;
       }
 
-      const energy = Math.min((source.energy + target.energy) * 0.5, 1.5);
+      const energy = Math.min((source.energy + target.energy) * 0.5, 1.3);
       const alpha =
-        0.052 +
-        weight * 0.06 +
-        ((source.depthAlpha + target.depthAlpha) * 0.5) * 0.07 +
-        energy * 0.11;
-      ctx.strokeStyle = `rgba(241, 245, 247, ${Math.min(alpha, 0.36).toFixed(3)})`;
-      ctx.lineWidth = 0.52 + weight * 0.42 + energy * 0.24;
+        0.042 +
+        weight * 0.052 +
+        ((source.depthAlpha + target.depthAlpha) * 0.5) * 0.058 +
+        energy * 0.12;
+      ctx.strokeStyle = `rgba(242, 246, 248, ${Math.min(alpha, 0.34).toFixed(3)})`;
+      ctx.lineWidth = 0.46 + weight * 0.28 + energy * 0.18;
       ctx.beginPath();
       ctx.moveTo(source.x, source.y);
       ctx.lineTo(target.x, target.y);
@@ -785,15 +829,15 @@ function bindFooterObserverField() {
 
     for (const point of depthSorted) {
       const alpha =
-        0.18 +
-        point.depthAlpha * 0.24 +
-        point.shimmer * 0.14 +
-        Math.min(point.energy, 1.15) * 0.46;
-      const glow = 1.6 + point.perspective * 2.8 + point.energy * 7.4;
+        0.17 +
+        point.depthAlpha * 0.21 +
+        point.shimmer * 0.1 +
+        Math.min(point.energy, 1.08) * 0.5;
+      const glow = 1.4 + point.perspective * 2.2 + point.energy * 6.6;
 
       ctx.beginPath();
       ctx.fillStyle = `rgba(245, 247, 248, ${Math.min(alpha, 0.92).toFixed(3)})`;
-      ctx.shadowColor = `rgba(255, 255, 255, ${Math.min(0.2 + point.energy * 0.48, 0.82).toFixed(3)})`;
+      ctx.shadowColor = `rgba(255, 255, 255, ${Math.min(0.18 + point.energy * 0.52, 0.84).toFixed(3)})`;
       ctx.shadowBlur = glow;
       ctx.arc(point.x, point.y, point.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -813,7 +857,11 @@ function bindFooterObserverField() {
     const deltaMs = field.lastTime ? Math.min(timeMs - field.lastTime, 40) : 16;
     field.lastTime = timeMs;
     field.tickTime += deltaMs;
-    field.drift -= deltaMs * 0.022;
+    field.drift -= deltaMs * 0.018;
+    const wrapSpan = field.xGap * Math.max(field.columns - field.bufferColumns * 2 - 1, 1);
+    if (Math.abs(field.drift) > wrapSpan) {
+      field.drift += wrapSpan;
+    }
 
     for (const cluster of field.energyClusters) {
       cluster.x += cluster.speed * (deltaMs / 1000);

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Agent Cognition and Collaboration Team</title>
+  <meta name="description" content="Initial prototype for an academic research team homepage.">
+  <link rel="stylesheet" href="./styles/tokens.css">
+  <link rel="stylesheet" href="./styles/base.css">
+  <link rel="stylesheet" href="./styles/home.css">
+</head>
+<body>
+  <a class="skip-link" href="#home">Skip to content</a>
+
+  <header class="site-header" data-site-header>
+    <div class="site-header__inner">
+      <a class="site-mark" href="#home" aria-label="Back to home">
+        <span class="site-mark__dock" data-monogram-dock>
+          <span class="site-mark__dock-text" data-site-dock-text></span>
+        </span>
+        <span class="site-mark__label" data-site-mark-label></span>
+      </a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <ul class="site-nav__list" data-nav-list></ul>
+      </nav>
+    </div>
+  </header>
+
+  <div class="floating-monogram" data-floating-monogram aria-hidden="true">
+    <span data-team-acronym></span>
+  </div>
+
+  <div class="page-visual" aria-hidden="true">
+    <div class="page-visual__frame">
+      <div class="cathedral-field">
+        <div class="cathedral-field__fog"></div>
+        <div class="cathedral-field__ring cathedral-field__ring--r1"></div>
+        <div class="cathedral-field__ring cathedral-field__ring--r2"></div>
+        <div class="cathedral-field__ring cathedral-field__ring--r3"></div>
+        <div class="cathedral-field__cathedral"></div>
+      </div>
+    </div>
+  </div>
+
+  <main class="page-shell">
+    <section class="hero" id="home" data-section="home">
+      <div class="hero__grid">
+        <div class="hero__intro">
+          <div class="hero__monogram-anchor" data-monogram-origin aria-hidden="true"></div>
+          <p class="hero__eyebrow">Multi-Agent Systems / Cognition / Collaboration</p>
+          <h1 class="hero__title" data-team-name></h1>
+          <p class="hero__subtitle" data-team-english></p>
+          <p class="hero__summary" data-team-summary></p>
+        </div>
+
+        <div class="hero__spacer" aria-hidden="true"></div>
+
+        <aside class="hero__news" aria-labelledby="news-title">
+          <div class="news-panel">
+            <div class="news-panel__header">
+              <h2 class="news-panel__title" id="news-title">News</h2>
+              <span class="news-panel__count" data-news-count></span>
+            </div>
+            <ol class="news-panel__list" data-news-list></ol>
+            <div class="news-panel__footer">
+              <button class="news-panel__button" type="button" data-news-prev>Prev</button>
+              <span class="news-panel__page" data-news-page></span>
+              <button class="news-panel__button" type="button" data-news-next>Next</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="content-section" id="members" data-section="members">
+      <div class="section-head">
+        <p class="section-head__eyebrow">Section 01</p>
+        <h2 class="section-head__title">Members</h2>
+        <p class="section-head__summary">Sample member records are adapted from the TrustFUL roster. The portrait zone is intentionally preserved for later cutout headshots.</p>
+      </div>
+      <div class="member-grid" data-members-grid></div>
+    </section>
+
+    <section class="content-section" id="publications" data-section="publications">
+      <div class="section-head">
+        <p class="section-head__eyebrow">Section 02</p>
+        <h2 class="section-head__title">Publications</h2>
+        <p class="section-head__summary">Selected publication records are used here to test real title lengths, citation rhythm, and reading comfort in a live-like environment.</p>
+      </div>
+      <div class="stack-list" data-publications-list></div>
+    </section>
+
+    <section class="content-section" id="projects" data-section="projects">
+      <div class="section-head">
+        <p class="section-head__eyebrow">Section 03</p>
+        <h2 class="section-head__title">Projects</h2>
+        <p class="section-head__summary">The projects section now uses real TrustFUL-style records so the card system can be judged under realistic research density.</p>
+      </div>
+      <div class="project-grid" data-projects-grid></div>
+    </section>
+
+    <section class="content-section" id="patents" data-section="patents">
+      <div class="section-head">
+        <p class="section-head__eyebrow">Section 04</p>
+        <h2 class="section-head__title">Patents</h2>
+        <p class="section-head__summary">The reference site has no patent archive, so this block uses real applied platforms and system outputs as an honest structural proxy.</p>
+      </div>
+      <div class="stack-list" data-patents-list></div>
+    </section>
+
+    <section class="content-section" id="awards" data-section="awards">
+      <div class="section-head">
+        <p class="section-head__eyebrow">Section 05</p>
+        <h2 class="section-head__title">Awards</h2>
+        <p class="section-head__summary">Award entries are adapted from the TrustFUL awards and news pages to test repeated honor labels and longer recognition notes.</p>
+      </div>
+      <div class="award-grid" data-awards-grid></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div class="site-footer__top">
+        <div class="site-footer__note">
+          <p class="site-footer__eyebrow">Footer Signal</p>
+          <p class="site-footer__text">
+            A continuous coordination field runs at the edge of the page rather than at the center.
+            It keeps the sense of multi-agent flow without disturbing the main monument.
+          </p>
+        </div>
+      </div>
+
+      <div class="footer-observer" data-footer-observer aria-label="Animated multi-agent coordination field">
+        <canvas class="footer-observer__canvas" data-footer-canvas></canvas>
+      </div>
+
+      <div class="site-footer__bottom">
+        <span>(c) 2026 Multi-Agent Cognition and Collaboration Team</span>
+        <span>ICP Filing Placeholder</span>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="./scripts/app.js"></script>
+</body>
+</html>

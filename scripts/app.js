@@ -111,10 +111,13 @@ function renderNews() {
 
   newsList.innerHTML = visibleItems
     .map(
-      (item, index) => `
-        <li class="news-item${index === 0 ? " news-item--lead" : ""}">
+      (item, index) => {
+        const isLead = index === 0;
+        return `
+        <li class="news-item${isLead ? " news-item--lead" : " news-item--secondary"}">
           <span class="news-item__marker" aria-hidden="true"></span>
-          <div>
+          <div class="news-item__body">
+            <div class="news-item__signal">${isLead ? "Current signal" : "Prior note"}</div>
             <div class="news-item__date">${item.date}</div>
             <div class="news-item__title">
               ${
@@ -126,7 +129,8 @@ function renderNews() {
             ${item.source ? `<div class="news-item__source">${item.source}</div>` : ""}
           </div>
         </li>
-      `
+      `;
+      }
     )
     .join("");
 
@@ -316,10 +320,11 @@ function bindActiveNavigation() {
       return;
     }
 
-    const immediate = options.immediate || prefersReducedMotion.matches || window.innerWidth <= 760;
-    const targetId = id || "home";
+    const targetId = "home";
 
-    if (runtime.visualTargetId === targetId && !immediate) {
+    if (runtime.visualTargetId === targetId) {
+      pageVisual.dataset.visualPhase = "settled";
+      pageVisual.dataset.visualState = targetId;
       return;
     }
 
@@ -335,23 +340,8 @@ function bindActiveNavigation() {
       runtime.visualPulseTimer = 0;
     }
 
-    if (immediate) {
-      pageVisual.dataset.visualPhase = "settled";
-      pageVisual.dataset.visualState = targetId;
-      return;
-    }
-
-    pageVisual.dataset.visualPhase = "rest";
-
-    runtime.visualStateTimer = window.setTimeout(() => {
-      pageVisual.dataset.visualState = targetId;
-      pageVisual.dataset.visualPhase = "pulse";
-      runtime.visualPulseTimer = window.setTimeout(() => {
-        pageVisual.dataset.visualPhase = "settled";
-        runtime.visualPulseTimer = 0;
-      }, 240);
-      runtime.visualStateTimer = 0;
-    }, 150);
+    pageVisual.dataset.visualPhase = "settled";
+    pageVisual.dataset.visualState = targetId;
   };
 
   geometry.sections = sections.map((section) => ({
@@ -369,9 +359,10 @@ function bindActiveNavigation() {
       }
     });
 
+    setActive(currentId);
+
     if (currentId !== runtime.activeSectionId) {
       runtime.activeSectionId = currentId;
-      setActive(currentId);
       updatePageVisualState(currentId);
       document.dispatchEvent(
         new CustomEvent("macc:sectionchange", {
@@ -972,6 +963,7 @@ function bindFooterObserverField() {
     const positions = computeNodePositions(forceStatic ? 0 : timeMs);
     const wakeAlpha = forceStatic ? 0.26 : mix(0.3, 1, field.wakeLevel);
     const warmMix = field.currentProfile.warmShift;
+    const axialY = field.height * (0.5 + Math.sin((forceStatic ? 0 : timeMs) * 0.00014) * 0.012 * field.currentProfile.swayBoost);
     field.lastDrawnEdges = 0;
     field.lastVisibleNodes = positions.filter(
       (point) =>
@@ -980,6 +972,29 @@ function bindFooterObserverField() {
         point.y > -field.yGap &&
         point.y < field.height + field.yGap
     ).length;
+
+    ctx.beginPath();
+    for (let step = 0; step <= 18; step += 1) {
+      const t = step / 18;
+      const x = field.width * t;
+      const y =
+        axialY +
+        Math.sin((forceStatic ? 0 : timeMs) * 0.00022 + t * Math.PI * 2.1) *
+          (2.2 + field.currentProfile.swayBoost * 1.8) *
+          mix(0.18, 1, field.wakeLevel);
+
+      if (step === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.strokeStyle = `rgba(${Math.round(236 + 8 * warmMix)}, ${Math.round(242 - 6 * warmMix)}, ${Math.round(246 - 12 * warmMix)}, ${Math.min(0.085 * wakeAlpha, 0.12).toFixed(3)})`;
+    ctx.lineWidth = 1.05;
+    ctx.shadowColor = `rgba(${Math.round(236 + 6 * warmMix)}, ${Math.round(242 - 8 * warmMix)}, ${Math.round(246 - 16 * warmMix)}, ${Math.min(0.12 * wakeAlpha, 0.18).toFixed(3)})`;
+    ctx.shadowBlur = 12;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 
     for (const cluster of field.energyClusters) {
       drawCluster(cluster, timeMs, forceStatic);

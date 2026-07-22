@@ -43,8 +43,13 @@ const runtime = {
   pointerFrameId: 0,
   pointerX: 0,
   pointerY: 0,
+  committedPointerX: 0,
+  committedPointerY: 0,
   visualStateTimer: 0,
-  visualTargetId: "home"
+  visualPulseTimer: 0,
+  visualTargetId: "home",
+  readingGuideIndex: -1,
+  updatePublicationReadingGuide: null
 };
 
 const geometry = {
@@ -325,6 +330,11 @@ function bindActiveNavigation() {
       runtime.visualStateTimer = 0;
     }
 
+    if (runtime.visualPulseTimer) {
+      window.clearTimeout(runtime.visualPulseTimer);
+      runtime.visualPulseTimer = 0;
+    }
+
     if (immediate) {
       pageVisual.dataset.visualPhase = "settled";
       pageVisual.dataset.visualState = targetId;
@@ -335,9 +345,13 @@ function bindActiveNavigation() {
 
     runtime.visualStateTimer = window.setTimeout(() => {
       pageVisual.dataset.visualState = targetId;
-      pageVisual.dataset.visualPhase = "settled";
+      pageVisual.dataset.visualPhase = "pulse";
+      runtime.visualPulseTimer = window.setTimeout(() => {
+        pageVisual.dataset.visualPhase = "settled";
+        runtime.visualPulseTimer = 0;
+      }, 240);
       runtime.visualStateTimer = 0;
-    }, 160);
+    }, 150);
   };
 
   geometry.sections = sections.map((section) => ({
@@ -359,6 +373,11 @@ function bindActiveNavigation() {
       runtime.activeSectionId = currentId;
       setActive(currentId);
       updatePageVisualState(currentId);
+      document.dispatchEvent(
+        new CustomEvent("macc:sectionchange", {
+          detail: { id: currentId }
+        })
+      );
     }
   };
 
@@ -373,6 +392,73 @@ function bindActiveNavigation() {
   updateActive();
   updatePageVisualState(runtime.activeSectionId, { immediate: true });
   return updateActive;
+}
+
+function bindPublicationReadingGuide() {
+  if (!publicationsList) {
+    return;
+  }
+
+  const publicationsSection = publicationsList.closest(".content-section");
+  const items = [...publicationsList.querySelectorAll(".stack-item")];
+  if (!items.length) {
+    return;
+  }
+
+  const setReadingIndex = (nextIndex) => {
+    if (runtime.readingGuideIndex === nextIndex) {
+      return;
+    }
+
+    runtime.readingGuideIndex = nextIndex;
+    items.forEach((item, index) => {
+      item.classList.toggle("is-reading", index === nextIndex);
+    });
+  };
+
+  const updateReadingGuide = () => {
+    if (window.innerWidth <= 760) {
+      setReadingIndex(-1);
+      return;
+    }
+
+    const headerOffset = header?.offsetHeight ?? 0;
+    const sectionRect = publicationsSection?.getBoundingClientRect();
+    if (
+      sectionRect &&
+      runtime.activeSectionId !== "publications" &&
+      (sectionRect.bottom < headerOffset + 12 || sectionRect.top > window.innerHeight * 1.02)
+    ) {
+      setReadingIndex(-1);
+      return;
+    }
+
+    const guideLine = headerOffset + Math.min(window.innerHeight * 0.28, 228);
+    let bestIndex = -1;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    items.forEach((item, index) => {
+      const rect = item.getBoundingClientRect();
+      const visible = rect.bottom > headerOffset + 22 && rect.top < window.innerHeight * 0.9;
+
+      if (!visible) {
+        return;
+      }
+
+      const readingAnchor = rect.top + Math.min(rect.height * 0.34, 132);
+      const distance = Math.abs(readingAnchor - guideLine);
+
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    });
+
+    setReadingIndex(bestIndex);
+  };
+
+  runtime.updatePublicationReadingGuide = updateReadingGuide;
+  updateReadingGuide();
 }
 
 function clamp(value, min, max) {
@@ -481,8 +567,19 @@ function bindPointerVisualResponse() {
     return;
   }
 
+  const pointerEpsilon = 0.0025;
   const flushPointer = () => {
     runtime.pointerFrameId = 0;
+
+    if (
+      Math.abs(runtime.pointerX - runtime.committedPointerX) < pointerEpsilon &&
+      Math.abs(runtime.pointerY - runtime.committedPointerY) < pointerEpsilon
+    ) {
+      return;
+    }
+
+    runtime.committedPointerX = runtime.pointerX;
+    runtime.committedPointerY = runtime.pointerY;
     document.documentElement.style.setProperty("--pointer-x", runtime.pointerX.toFixed(4));
     document.documentElement.style.setProperty("--pointer-y", runtime.pointerY.toFixed(4));
   };
@@ -506,7 +603,7 @@ function bindPointerVisualResponse() {
   };
 
   window.addEventListener("pointermove", updatePointer, { passive: true });
-  window.addEventListener("pointerleave", resetPointer);
+  window.addEventListener("pointerleave", resetPointer, { passive: true });
   resetPointer();
 }
 
@@ -520,6 +617,7 @@ function scheduleVisualFrame() {
     updateFloatingMonogram();
     updatePageVisualRelease();
     runtime.updateActiveNavigation?.();
+    runtime.updatePublicationReadingGuide?.();
   });
 }
 
@@ -564,13 +662,35 @@ function bindFooterObserverField() {
     drift: 0,
     tickTime: 0,
     lastTime: 0,
+    frameAccumulator: 0,
+    targetFrameMs: 1000 / 45,
     energyClusters: [],
+    visibilityRatio: 0,
+    wakeLevel: 0,
+    profileId: "home",
+    currentProfile: {
+      lineBoost: 1,
+      nodeBoost: 1,
+      clusterBoost: 1,
+      driftBoost: 1,
+      clusterSpeed: 1,
+      swayBoost: 1,
+      warmShift: 0
+    },
+    sectionProfiles: {
+      home: { lineBoost: 1, nodeBoost: 1, clusterBoost: 1, driftBoost: 1, clusterSpeed: 1, swayBoost: 1, warmShift: 0 },
+      members: { lineBoost: 0.94, nodeBoost: 0.96, clusterBoost: 0.84, driftBoost: 0.9, clusterSpeed: 0.92, swayBoost: 0.86, warmShift: -0.04 },
+      publications: { lineBoost: 1.08, nodeBoost: 1.02, clusterBoost: 0.9, driftBoost: 0.94, clusterSpeed: 0.96, swayBoost: 0.74, warmShift: -0.01 },
+      projects: { lineBoost: 1.02, nodeBoost: 1.08, clusterBoost: 1.12, driftBoost: 1.08, clusterSpeed: 1.08, swayBoost: 1.06, warmShift: 0.06 },
+      patents: { lineBoost: 1.1, nodeBoost: 1.01, clusterBoost: 0.96, driftBoost: 0.98, clusterSpeed: 0.99, swayBoost: 0.68, warmShift: 0.08 },
+      awards: { lineBoost: 0.98, nodeBoost: 1.03, clusterBoost: 0.88, driftBoost: 0.9, clusterSpeed: 0.92, swayBoost: 0.58, warmShift: 0.12 }
+    },
     lastDrawnEdges: 0,
     lastVisibleNodes: 0
   };
 
   const shouldAnimate = () =>
-    field.visible &&
+    field.visibilityRatio > 0.01 &&
     document.visibilityState === "visible" &&
     !prefersReducedMotion.matches &&
     window.innerWidth > 760;
@@ -779,17 +899,17 @@ function bindFooterObserverField() {
       for (const cluster of field.energyClusters) {
         const clusterY =
           field.height * cluster.yRatio +
-          Math.sin(timeMs * 0.0003 + cluster.phase) * cluster.sway;
+          Math.sin(timeMs * 0.0003 + cluster.phase) * cluster.sway * field.currentProfile.swayBoost;
         const dx = x - cluster.x;
         const dy = y - clusterY;
         const cosAngle = Math.cos(cluster.angle);
         const sinAngle = Math.sin(cluster.angle);
         const localX = dx * cosAngle + dy * sinAngle;
         const localY = -dx * sinAngle + dy * cosAngle;
-        const breath = 0.68 + 0.32 * Math.sin(timeMs * 0.0013 + cluster.phase);
+        const breath = mix(0.72, 0.68 + 0.32 * Math.sin(timeMs * 0.0013 + cluster.phase), field.wakeLevel);
         const horizontal = (localX * localX) / (2 * cluster.radiusX * cluster.radiusX);
         const vertical = (localY * localY) / (2 * cluster.radiusY * cluster.radiusY);
-        energy += cluster.strength * breath * Math.exp(-(horizontal + vertical));
+        energy += cluster.strength * field.currentProfile.clusterBoost * breath * Math.exp(-(horizontal + vertical));
       }
 
       positions.push({
@@ -812,25 +932,29 @@ function bindFooterObserverField() {
     const ctx = field.context;
     const clusterY =
       field.height * cluster.yRatio +
-      Math.sin((forceStatic ? 0 : timeMs) * 0.0003 + cluster.phase) * cluster.sway;
-    const breath = 0.7 + 0.3 * Math.sin((forceStatic ? 0 : timeMs) * 0.0013 + cluster.phase);
+      Math.sin((forceStatic ? 0 : timeMs) * 0.0003 + cluster.phase) * cluster.sway * field.currentProfile.swayBoost;
+    const breathBase = 0.7 + 0.3 * Math.sin((forceStatic ? 0 : timeMs) * 0.0013 + cluster.phase);
+    const breath = mix(0.72, breathBase, field.wakeLevel);
     const radiusX = cluster.radiusX * (0.88 + breath * 0.22);
     const radiusY = cluster.radiusY * (0.92 + breath * 0.18);
+    const strength = cluster.strength * field.currentProfile.clusterBoost;
+    const wakeAlpha = mix(0.24, 1, field.wakeLevel);
+    const warmMix = field.currentProfile.warmShift;
 
     ctx.save();
     ctx.translate(cluster.x, clusterY);
     ctx.rotate(cluster.angle);
 
     const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radiusX);
-    gradient.addColorStop(0, `rgba(250, 252, 255, ${(0.2 * cluster.strength * breath).toFixed(3)})`);
-    gradient.addColorStop(0.42, `rgba(241, 247, 249, ${(0.11 * cluster.strength * breath).toFixed(3)})`);
+    gradient.addColorStop(0, `rgba(${Math.round(250 + 4 * warmMix)}, ${Math.round(252 - 6 * warmMix)}, 255, ${(0.2 * strength * breath * wakeAlpha).toFixed(3)})`);
+    gradient.addColorStop(0.42, `rgba(${Math.round(241 + 10 * warmMix)}, ${Math.round(247 - 8 * warmMix)}, 249, ${(0.11 * strength * breath * wakeAlpha).toFixed(3)})`);
     gradient.addColorStop(1, "rgba(241, 247, 249, 0)");
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, tau);
     ctx.fill();
 
-    ctx.fillStyle = `rgba(255, 255, 255, ${(0.06 * cluster.strength * breath).toFixed(3)})`;
+    ctx.fillStyle = `rgba(255, ${Math.round(252 - 10 * warmMix)}, ${Math.round(255 - 18 * warmMix)}, ${(0.06 * strength * breath * wakeAlpha).toFixed(3)})`;
     ctx.beginPath();
     ctx.ellipse(radiusX * 0.14, 0, radiusX * 0.34, radiusY * 0.48, 0, 0, tau);
     ctx.fill();
@@ -846,6 +970,8 @@ function bindFooterObserverField() {
     ctx.clearRect(0, 0, field.width, field.height);
 
     const positions = computeNodePositions(forceStatic ? 0 : timeMs);
+    const wakeAlpha = forceStatic ? 0.26 : mix(0.3, 1, field.wakeLevel);
+    const warmMix = field.currentProfile.warmShift;
     field.lastDrawnEdges = 0;
     field.lastVisibleNodes = positions.filter(
       (point) =>
@@ -888,8 +1014,9 @@ function bindFooterObserverField() {
         weight * 0.052 +
         ((source.depthAlpha + target.depthAlpha) * 0.5) * 0.058 +
         energy * 0.12;
-      ctx.strokeStyle = `rgba(242, 246, 248, ${Math.min(alpha, 0.34).toFixed(3)})`;
-      ctx.lineWidth = 0.46 + weight * 0.28 + energy * 0.18;
+      const boostedAlpha = alpha * field.currentProfile.lineBoost * wakeAlpha;
+      ctx.strokeStyle = `rgba(${Math.round(242 + 6 * warmMix)}, ${Math.round(246 - 6 * warmMix)}, ${Math.round(248 - 12 * warmMix)}, ${Math.min(boostedAlpha, 0.34).toFixed(3)})`;
+      ctx.lineWidth = (0.46 + weight * 0.28 + energy * 0.18) * mix(0.9, field.currentProfile.lineBoost, field.wakeLevel);
       ctx.beginPath();
       ctx.moveTo(source.x, source.y);
       ctx.lineTo(target.x, target.y);
@@ -905,11 +1032,12 @@ function bindFooterObserverField() {
         point.depthAlpha * 0.21 +
         point.shimmer * 0.1 +
         Math.min(point.energy, 1.08) * 0.5;
-      const glow = 1.4 + point.perspective * 2.2 + point.energy * 6.6;
+      const boostedAlpha = alpha * field.currentProfile.nodeBoost * wakeAlpha;
+      const glow = (1.4 + point.perspective * 2.2 + point.energy * 6.6) * mix(0.88, field.currentProfile.nodeBoost, field.wakeLevel);
 
       ctx.beginPath();
-      ctx.fillStyle = `rgba(245, 247, 248, ${Math.min(alpha, 0.92).toFixed(3)})`;
-      ctx.shadowColor = `rgba(255, 255, 255, ${Math.min(0.18 + point.energy * 0.52, 0.84).toFixed(3)})`;
+      ctx.fillStyle = `rgba(${Math.round(245 + 6 * warmMix)}, ${Math.round(247 - 8 * warmMix)}, ${Math.round(248 - 12 * warmMix)}, ${Math.min(boostedAlpha, 0.92).toFixed(3)})`;
+      ctx.shadowColor = `rgba(${Math.round(255 - 4 * warmMix)}, ${Math.round(255 - 8 * warmMix)}, ${Math.round(255 - 16 * warmMix)}, ${Math.min((0.18 + point.energy * 0.52) * wakeAlpha, 0.84).toFixed(3)})`;
       ctx.shadowBlur = glow;
       ctx.arc(point.x, point.y, point.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -926,17 +1054,36 @@ function bindFooterObserverField() {
       return;
     }
 
-    const deltaMs = field.lastTime ? Math.min(timeMs - field.lastTime, 40) : 16;
+    const deltaMs = field.lastTime ? Math.min(timeMs - field.lastTime, 40) : field.targetFrameMs;
     field.lastTime = timeMs;
-    field.tickTime += deltaMs;
-    field.drift -= deltaMs * 0.018;
+    field.frameAccumulator += deltaMs;
+
+    if (field.frameAccumulator < field.targetFrameMs) {
+      field.rafId = window.requestAnimationFrame(tick);
+      return;
+    }
+
+    const stepMs = field.frameAccumulator;
+    field.frameAccumulator = 0;
+    field.tickTime += stepMs;
+    const targetProfile = field.sectionProfiles[runtime.activeSectionId] ?? field.sectionProfiles.home;
+    field.currentProfile.lineBoost = mix(field.currentProfile.lineBoost, targetProfile.lineBoost, 0.08);
+    field.currentProfile.nodeBoost = mix(field.currentProfile.nodeBoost, targetProfile.nodeBoost, 0.08);
+    field.currentProfile.clusterBoost = mix(field.currentProfile.clusterBoost, targetProfile.clusterBoost, 0.08);
+    field.currentProfile.driftBoost = mix(field.currentProfile.driftBoost, targetProfile.driftBoost, 0.08);
+    field.currentProfile.clusterSpeed = mix(field.currentProfile.clusterSpeed, targetProfile.clusterSpeed, 0.08);
+    field.currentProfile.swayBoost = mix(field.currentProfile.swayBoost, targetProfile.swayBoost, 0.08);
+    field.currentProfile.warmShift = mix(field.currentProfile.warmShift, targetProfile.warmShift, 0.08);
+    const targetWake = easeInOut(clamp((field.visibilityRatio - 0.04) / 0.36, 0, 1));
+    field.wakeLevel = mix(field.wakeLevel, targetWake, 0.1);
+    field.drift -= stepMs * 0.018 * field.currentProfile.driftBoost * mix(0.24, 1, field.wakeLevel);
     const wrapSpan = field.xGap * Math.max(field.columns - field.bufferColumns * 2 - 1, 1);
     if (Math.abs(field.drift) > wrapSpan) {
       field.drift += wrapSpan;
     }
 
     for (const cluster of field.energyClusters) {
-      cluster.x += cluster.speed * (deltaMs / 1000);
+      cluster.x += cluster.speed * field.currentProfile.clusterSpeed * mix(0.2, 1, field.wakeLevel) * (stepMs / 1000);
       if (cluster.x - cluster.radiusX > field.width + cluster.radiusX * 0.22) {
         cluster.x = -cluster.radiusX * 1.24;
       }
@@ -950,6 +1097,7 @@ function bindFooterObserverField() {
     if (shouldAnimate()) {
       if (!field.rafId) {
         field.lastTime = 0;
+        field.frameAccumulator = field.targetFrameMs;
         field.rafId = window.requestAnimationFrame(tick);
       }
     } else if (field.rafId) {
@@ -963,10 +1111,12 @@ function bindFooterObserverField() {
 
   field.intersectionObserver = new IntersectionObserver(
     (entries) => {
-      field.visible = entries[0]?.isIntersecting ?? false;
+      const entry = entries[0];
+      field.visible = entry?.isIntersecting ?? false;
+      field.visibilityRatio = entry?.intersectionRatio ?? 0;
       syncFieldAnimation();
     },
-    { threshold: 0.18 }
+    { threshold: [0, 0.05, 0.12, 0.2, 0.32, 0.5, 0.72, 1] }
   );
   field.intersectionObserver.observe(footerObserver);
 
@@ -985,6 +1135,8 @@ function bindFooterObserverField() {
     getState: () => ({
       drawnEdges: field.lastDrawnEdges,
       visibleNodes: field.lastVisibleNodes,
+      wakeLevel: Number(field.wakeLevel.toFixed(3)),
+      visibilityRatio: Number(field.visibilityRatio.toFixed(3)),
       clusters: field.energyClusters.map((cluster) => ({
         x: Number(cluster.x.toFixed(2)),
         yRatio: cluster.yRatio,
@@ -1003,6 +1155,7 @@ function init() {
   bindNewsPager();
   renderMembers();
   renderStackList(siteContent.publications, publicationsList);
+  bindPublicationReadingGuide();
   renderCardGrid(siteContent.projects, projectsGrid, "project-card");
   renderStackList(siteContent.patents, patentsList);
   renderCardGrid(siteContent.awards, awardsGrid, "award-card");

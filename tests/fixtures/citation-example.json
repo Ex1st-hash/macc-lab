@@ -1,0 +1,11 @@
+{
+  "title": "Mobile edge intelligence for large language models: A contemporary survey",
+  "meta": "2025 / Survey / IEEE Communications Surveys & Tutorials",
+  "summary": "A contemporary survey of mobile edge intelligence for large language models.",
+  "citations": {
+    "gbt7714": "Qu G, Chen Q, Wei W, et al. Mobile edge intelligence for large language models: A contemporary survey[J]. IEEE Communications Surveys & Tutorials, 2025, 27(6): 3820-3860.",
+    "mla": "Qu, Guangqiao, et al. \"Mobile edge intelligence for large language models: A contemporary survey.\" IEEE Communications Surveys & Tutorials 27.6 (2025): 3820-3860.",
+    "apa": "Qu, G., Chen, Q., Wei, W., Lin, Z., Chen, X., & Huang, K. (2025). Mobile edge intelligence for large language models: A contemporary survey. IEEE Communications Surveys & Tutorials, 27(6), 3820-3860.",
+    "bibtex": "@article{qu2025mobile,\n  title = {Mobile edge intelligence for large language models: A contemporary survey},\n  author = {Qu, G. and Chen, Q. and Wei, W. and Lin, Z. and Chen, X. and Huang, K.},\n  journal = {IEEE Communications Surveys & Tutorials},\n  year = {2025},\n  volume = {27},\n  number = {6},\n  pages = {3820--3860}\n}"
+  }
+}

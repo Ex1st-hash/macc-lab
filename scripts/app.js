@@ -1,10 +1,11 @@
 import { siteContent } from "./content.js";
+import { applyNavigationOrder } from "./navigation.js";
+import { bindCitations } from "./citations.js";
+import { bindFooterField } from "./footer-field.js";
 
 const state = {
   navItems: siteContent.navigation,
-  newsItems: siteContent.news.slice(0, 10),
-  newsItemsPerPage: 2,
-  newsPage: 0
+  newsItems: siteContent.news
 };
 
 const header = document.querySelector("[data-site-header]");
@@ -20,9 +21,6 @@ const monogramOrigin = document.querySelector("[data-monogram-origin]");
 const monogramTextNodes = document.querySelectorAll("[data-team-acronym]");
 const newsList = document.querySelector("[data-news-list]");
 const newsCount = document.querySelector("[data-news-count]");
-const newsPage = document.querySelector("[data-news-page]");
-const newsPrev = document.querySelector("[data-news-prev]");
-const newsNext = document.querySelector("[data-news-next]");
 const membersGrid = document.querySelector("[data-members-grid]");
 const publicationsList = document.querySelector("[data-publications-list]");
 const projectsGrid = document.querySelector("[data-projects-grid]");
@@ -59,6 +57,7 @@ const geometry = {
   heroRange: 220,
   originAbsX: 0,
   originAbsY: 0,
+  originWidth: floatingMonogramSize,
   dockX: 0,
   dockY: 0,
   dockWidth: 40,
@@ -71,30 +70,55 @@ const geometry = {
 };
 
 function renderNavigation() {
-  navList.innerHTML = state.navItems
-    .map(
-      (item) => `
-        <li>
-          <a class="site-nav__link" href="#${item.id}" data-nav-link="${item.id}">
-            ${item.label}
-          </a>
-        </li>
-      `
-    )
-    .join("");
+  state.navItems = applyNavigationOrder(document.querySelector("main"), siteContent.navigation);
+  navList.replaceChildren(...state.navItems.map(item => {
+    const li = document.createElement("li");
+    const link = document.createElement("a");
+    link.className = "site-nav__link";
+    link.href = `#${item.id}`;
+    link.dataset.navLink = item.id;
+    link.textContent = item.label;
+    li.append(link);
+    return li;
+  }));
 }
 
 function renderHero() {
   if (siteContent.team.titleLines?.length) {
-    teamName.innerHTML = siteContent.team.titleLines
-      .map((line) => `<span>${line}</span>`)
-      .join("");
+    teamName.replaceChildren(...siteContent.team.titleLines.map(line => {
+      const span = document.createElement("span");
+      span.textContent = line;
+      return span;
+    }));
   } else {
     teamName.textContent = siteContent.team.name;
   }
 
-  teamEnglish.textContent = siteContent.team.englishName;
+  document.querySelector(".hero__eyebrow").textContent = siteContent.team.englishName;
+  if (siteContent.team.researchDirections?.length) {
+    const directions = document.createElement("ul");
+    directions.className = "hero__subtitle hero__directions";
+    directions.dataset.teamDirections = "";
+    directions.replaceChildren(...siteContent.team.researchDirections.map(direction => {
+      const li = document.createElement("li");
+      li.textContent = direction;
+      return li;
+    }));
+    teamEnglish.replaceWith(directions);
+  } else {
+    teamEnglish.textContent = siteContent.team.englishName;
+  }
   teamSummary.textContent = siteContent.team.summary;
+  if (siteContent.team.recruitment?.text) {
+    const recruitment = document.createElement("p");
+    recruitment.className = "hero__recruitment";
+    recruitment.dataset.recruitment = "";
+    const text = document.createElement(siteContent.team.recruitment.href ? "a" : "span");
+    text.textContent = siteContent.team.recruitment.text;
+    if (siteContent.team.recruitment.href) text.href = siteContent.team.recruitment.href;
+    recruitment.append(text);
+    teamSummary.after(recruitment);
+  }
   siteMarkLabel.textContent = siteContent.team.markLabel;
   dockText.textContent = siteContent.team.acronym;
   monogramTextNodes.forEach((node) => {
@@ -105,11 +129,9 @@ function renderHero() {
 }
 
 function renderNews() {
-  const totalPages = Math.ceil(state.newsItems.length / state.newsItemsPerPage);
-  const startIndex = state.newsPage * state.newsItemsPerPage;
-  const visibleItems = state.newsItems.slice(startIndex, startIndex + state.newsItemsPerPage);
-
-  newsList.innerHTML = visibleItems
+  newsList.tabIndex = 0;
+  newsList.setAttribute("aria-label", "News");
+  newsList.innerHTML = state.newsItems
     .map(
       (item, index) => {
         const isLead = index === 0;
@@ -135,134 +157,129 @@ function renderNews() {
     .join("");
 
   newsCount.textContent = `${state.newsItems.length} items`;
-  newsPage.textContent = `Page ${state.newsPage + 1} / ${totalPages}`;
-  newsPrev.disabled = state.newsPage === 0;
-  newsNext.disabled = state.newsPage >= totalPages - 1;
-}
-
-function bindNewsPager() {
-  const transitionNews = async (targetPage) => {
-    const totalPages = Math.ceil(state.newsItems.length / state.newsItemsPerPage);
-    const boundedTarget = clamp(targetPage, 0, totalPages - 1);
-    if (boundedTarget === state.newsPage) {
-      return;
-    }
-
-    const direction = boundedTarget > state.newsPage ? 1 : -1;
-    newsList.classList.add("is-transitioning");
-
-    const exitAnimation = newsList.animate(
-      [
-        { opacity: 1, transform: "translateY(0px)" },
-        { opacity: 0, transform: `translateY(${direction * -14}px)` }
-      ],
-      {
-        duration: 220,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        fill: "forwards"
-      }
-    );
-
-    try {
-      await exitAnimation.finished;
-    } catch {
-      // Ignore aborted animations.
-    }
-
-    state.newsPage = boundedTarget;
-    renderNews();
-
-    newsList.animate(
-      [
-        { opacity: 0, transform: `translateY(${direction * 14}px)` },
-        { opacity: 1, transform: "translateY(0px)" }
-      ],
-      {
-        duration: 280,
-        easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-        fill: "both"
-      }
-    );
-
-    newsList.classList.remove("is-transitioning");
-  };
-
-  newsPrev.addEventListener("click", () => {
-    transitionNews(state.newsPage - 1);
-  });
-
-  newsNext.addEventListener("click", () => {
-    transitionNews(state.newsPage + 1);
-  });
+  if (!state.newsItems.length) newsList.innerHTML = '<li class="news-empty">No news at present.</li>';
 }
 
 function renderMembers() {
-  membersGrid.innerHTML = siteContent.members
-    .map(
-      (member) => {
-        const portraitStyle = [];
-
-        if (member.image) {
-          portraitStyle.push(`--portrait-image: url('${member.image}')`);
-        }
-
-        if (member.portraitPosition) {
-          portraitStyle.push(`--portrait-position: ${member.portraitPosition}`);
-        }
-
-        if (member.portraitBackdropPosition) {
-          portraitStyle.push(`--portrait-backdrop-position: ${member.portraitBackdropPosition}`);
-        }
-
-        if (member.portraitScale) {
-          portraitStyle.push(`--portrait-scale: ${member.portraitScale}`);
-        }
-
-        const portraitStyleAttribute = portraitStyle.length
-          ? ` style="${portraitStyle.join("; ")}"`
-          : "";
-
-        return `
-        <article class="member-card${member.image ? " member-card--has-image" : ""}" style="--avatar-hue: ${member.hue}">
-          <div class="member-card__portrait" aria-hidden="true"${portraitStyleAttribute}>
-            ${
-              member.image
-                ? `
-                  <div class="member-card__portrait-backdrop"></div>
-                  <div class="member-card__portrait-cutout">
-                    <img class="member-card__portrait-image" src="${member.image}" alt="${member.name}" loading="lazy" referrerpolicy="no-referrer" />
-                  </div>
-                `
-                : ""
-            }
-            <span class="member-card__portrait-tag">${member.group}</span>
-            <span class="member-card__portrait-mark">${member.initials}</span>
-          </div>
-          <div class="member-card__content">
-            <p class="member-card__group">${member.group}</p>
-            <h3 class="member-card__name">
-              ${
-                member.href
-                  ? `<a href="${member.href}" target="_blank" rel="noreferrer">${member.name}</a>`
-                  : member.name
-              }
-            </h3>
-            <p class="member-card__role">${member.role}</p>
-            <p class="member-card__bio">${member.bio}</p>
-          </div>
-        </article>
-      `;
+  membersGrid.classList.replace("member-grid", "member-groups");
+  membersGrid.replaceChildren();
+  const groups = [...siteContent.memberGroups];
+  for (const member of siteContent.members) {
+    if (!groups.some(group => group.id === member.group)) {
+      groups.push({ id: member.group, label: member.group || "Members", color: "#b9cbc8" });
+    }
+  }
+  if (siteContent.membersNotice) {
+    const notice = document.createElement("p");
+    notice.className = "member-groups__notice";
+    notice.textContent = siteContent.membersNotice;
+    membersGrid.append(notice);
+  }
+  for (const [index, group] of groups.entries()) {
+    const members = siteContent.members.filter(member => member.group === group.id);
+    const section = document.createElement("section");
+    section.className = "member-group";
+    section.dataset.memberGroup = group.id;
+    section.style.setProperty("--member-color", group.color);
+    section.setAttribute("aria-labelledby", `member-group-${index}`);
+    const heading = document.createElement("h3");
+    heading.id = `member-group-${index}`;
+    heading.className = "member-group__title";
+    heading.textContent = group.label;
+    const count = document.createElement("span");
+    count.textContent = String(members.length).padStart(2, "0");
+    heading.append(count);
+    const grid = document.createElement("div");
+    grid.className = "member-grid";
+    for (const member of members) {
+      const card = document.createElement("article");
+      card.className = "member-card";
+      card.innerHTML = `<div class="member-card__portrait" aria-hidden="true">
+        <div class="member-card__portrait-backdrop"></div>
+        <div class="member-card__portrait-cutout"></div>
+        <span class="member-card__portrait-tag"></span>
+        <span class="member-card__portrait-mark"></span>
+      </div><div class="member-card__content"><h4 class="member-card__name"></h4>
+        <p class="member-card__role"></p><p class="member-card__bio"></p></div>`;
+      card.querySelector(".member-card__portrait-tag").textContent = group.label;
+      card.querySelector(".member-card__portrait-mark").textContent = member.initials;
+      const name = card.querySelector(".member-card__name");
+      const link = document.createElement(member.href ? "a" : "span");
+      link.textContent = member.name;
+      if (member.href) { link.href = member.href; link.target = "_blank"; link.rel = "noreferrer"; }
+      name.append(link);
+      card.querySelector(".member-card__role").textContent = member.role;
+      card.querySelector(".member-card__bio").textContent = member.bio ?? "";
+      if (member.image) {
+        const image = document.createElement("img");
+        image.className = "member-card__portrait-image";
+        image.alt = "";
+        image.loading = "lazy";
+        image.style.objectPosition = member.portraitPosition || "50% 100%";
+        image.addEventListener("error", () => {
+          image.remove();
+          card.classList.remove("member-card--has-image");
+        });
+        image.src = member.image;
+        card.querySelector(".member-card__portrait-cutout").append(image);
+        card.classList.add("member-card--has-image");
       }
-    )
-    .join("");
+      grid.append(card);
+    }
+    if (!members.length) {
+      const empty = document.createElement("p");
+      empty.className = "member-group__empty";
+      empty.textContent = "To be announced.";
+      grid.append(empty);
+    }
+    section.append(heading, grid);
+    membersGrid.append(section);
+  }
+}
+
+function renderFooter() {
+  document.querySelector(".site-footer__eyebrow").textContent = siteContent.team.englishName;
+  document.querySelector(".site-footer__text").textContent = siteContent.team.summary;
+  const contact = siteContent.contact ?? {};
+  const list = document.querySelector("[data-contact-list]");
+  for (const [label, value, href] of [
+    ["Email", contact.email, contact.email ? `mailto:${contact.email}` : ""],
+    ["Phone", contact.phone, contact.phone && !contact.isExample ? `tel:${contact.phone.replace(/[^+\d]/g, "")}` : ""],
+    ["Office", contact.office, ""]
+  ]) {
+    if (!value) continue;
+    const item = document.createElement("div");
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const detail = document.createElement("dd");
+    const text = document.createElement(href ? "a" : "span");
+    text.textContent = value;
+    if (href) text.href = href;
+    detail.append(text);
+    item.append(term, detail);
+    list.append(item);
+  }
+  document.querySelector("[data-contact-notice]").textContent = contact.isExample ? "示例联系方式，正式信息待更新。" : "";
+  document.querySelector("[data-footer-copyright]").textContent = `(c) ${new Date().getFullYear()} ${siteContent.team.englishName}`;
+  const filing = document.querySelector("[data-footer-filing]");
+  filing.hidden = !contact.filing?.text;
+  if (contact.filing?.text) {
+    const text = document.createElement(contact.filing.href ? "a" : "span");
+    text.textContent = contact.filing.text;
+    if (contact.filing.href) { text.href = contact.filing.href; text.rel = "noreferrer"; text.target = "_blank"; }
+    filing.append(text);
+  }
 }
 
 function renderStackList(items, container) {
   container.innerHTML = items
     .map(
-      (item) => `
+      (item, index) => `
         <article class="stack-item">
-          <div class="stack-item__meta">${item.meta}</div>
+          <div class="stack-item__meta">${item.meta}${container === publicationsList ? `
+            <div><button class="citation-trigger" type="button" data-cite-index="${index}">
+              <span class="ui-icon ui-icon--quote" aria-hidden="true"></span>Cite
+            </button></div>` : ""}</div>
           <div>
             <h3 class="stack-item__title">
               ${
@@ -471,6 +488,7 @@ function cacheLayoutMetrics() {
   if (originRect) {
     geometry.originAbsX = originRect.left + window.scrollX + originRect.width / 2;
     geometry.originAbsY = originRect.top + window.scrollY + originRect.height / 2;
+    geometry.originWidth = originRect.width;
   }
 
   if (dockRect) {
@@ -504,7 +522,7 @@ function updatePageVisualRelease() {
     return;
   }
 
-  if (window.innerWidth <= 760) {
+  if (window.innerWidth <= (pageVisual.classList.contains("page-visual--concept") ? 700 : 760)) {
     pageVisual.style.setProperty("--visual-release-y", "0px");
     pageVisual.style.setProperty("--visual-opacity", "1");
     return;
@@ -542,8 +560,9 @@ function updateFloatingMonogram() {
   const dockY = geometry.dockY;
   const x = originX + (dockX - originX) * progress;
   const y = originY + (dockY - originY) * progress;
+  const originScale = geometry.originWidth / floatingMonogramSize;
   const targetScale = geometry.dockWidth / floatingMonogramSize;
-  const scale = 1 + (targetScale - 1) * progress;
+  const scale = originScale + (targetScale - originScale) * progress;
   const docked = rawProgress > 0.985;
 
   floatingMonogram.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${scale})`;
@@ -613,563 +632,25 @@ function scheduleVisualFrame() {
 }
 
 function bindFloatingMonogram() {
+  const refreshLayout = () => {
+    cacheLayoutMetrics();
+    scheduleVisualFrame();
+  };
   cacheLayoutMetrics();
   updateFloatingMonogram();
   window.addEventListener("scroll", scheduleVisualFrame, { passive: true });
-  window.addEventListener("resize", () => {
-    cacheLayoutMetrics();
-    scheduleVisualFrame();
-  });
+  window.addEventListener("resize", refreshLayout);
+  document.fonts.ready.then(refreshLayout);
 }
 
-function bindFooterObserverField() {
-  if (!footerObserver || !footerCanvas) {
-    return;
-  }
-
-  const context = footerCanvas.getContext("2d", { alpha: true, desynchronized: true });
-  if (!context) {
-    return;
-  }
-
-  const field = {
-    canvas: footerCanvas,
-    context,
-    width: 0,
-    height: 0,
-    dpr: 1,
-    nodes: [],
-    edges: [],
-    visible: false,
-    rafId: 0,
-    resizeObserver: null,
-    intersectionObserver: null,
-    columns: 0,
-    rows: 0,
-    xGap: 0,
-    yGap: 0,
-    bufferColumns: 2,
-    perspective: 780,
-    drift: 0,
-    tickTime: 0,
-    lastTime: 0,
-    frameAccumulator: 0,
-    targetFrameMs: 1000 / 45,
-    energyClusters: [],
-    visibilityRatio: 0,
-    wakeLevel: 0,
-    profileId: "home",
-    currentProfile: {
-      lineBoost: 1,
-      nodeBoost: 1,
-      clusterBoost: 1,
-      driftBoost: 1,
-      clusterSpeed: 1,
-      swayBoost: 1,
-      warmShift: 0
-    },
-    sectionProfiles: {
-      home: { lineBoost: 1, nodeBoost: 1, clusterBoost: 1, driftBoost: 1, clusterSpeed: 1, swayBoost: 1, warmShift: 0 },
-      members: { lineBoost: 0.94, nodeBoost: 0.96, clusterBoost: 0.84, driftBoost: 0.9, clusterSpeed: 0.92, swayBoost: 0.86, warmShift: -0.04 },
-      publications: { lineBoost: 1.08, nodeBoost: 1.02, clusterBoost: 0.9, driftBoost: 0.94, clusterSpeed: 0.96, swayBoost: 0.74, warmShift: -0.01 },
-      projects: { lineBoost: 1.02, nodeBoost: 1.08, clusterBoost: 1.12, driftBoost: 1.08, clusterSpeed: 1.08, swayBoost: 1.06, warmShift: 0.06 },
-      patents: { lineBoost: 1.1, nodeBoost: 1.01, clusterBoost: 0.96, driftBoost: 0.98, clusterSpeed: 0.99, swayBoost: 0.68, warmShift: 0.08 },
-      awards: { lineBoost: 0.98, nodeBoost: 1.03, clusterBoost: 0.88, driftBoost: 0.9, clusterSpeed: 0.92, swayBoost: 0.58, warmShift: 0.12 }
-    },
-    lastDrawnEdges: 0,
-    lastVisibleNodes: 0
-  };
-
-  const shouldAnimate = () =>
-    field.visibilityRatio > 0.01 &&
-    document.visibilityState === "visible" &&
-    !prefersReducedMotion.matches &&
-    window.innerWidth > 760;
-
-  const clampInt = (value, min, max) => Math.min(Math.max(value, min), max);
-  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-  const mix = (a, b, t) => a + (b - a) * t;
-  const tau = Math.PI * 2;
-  const addEdge = (edgeSet, source, target, weight) => {
-    const key = source < target ? `${source}:${target}` : `${target}:${source}`;
-    if (edgeSet.has(key)) {
-      return;
-    }
-
-    edgeSet.add(key);
-    field.edges.push([source, target, weight]);
-  };
-
-  const rebuildField = () => {
-    field.nodes = [];
-    field.edges = [];
-    const edgeSet = new Set();
-    const visibleColumns = clampInt(Math.round(field.width / 72), 18, 28);
-    field.rows = clampInt(Math.round(field.height / 22), 6, 8);
-    field.xGap = field.width / Math.max(visibleColumns - 1, 1);
-    field.yGap = field.height / Math.max(field.rows - 1, 1);
-    field.columns = visibleColumns + field.bufferColumns * 2;
-    const startX = -field.bufferColumns * field.xGap;
-    const startY = 0;
-
-    for (let row = 0; row < field.rows; row += 1) {
-      const rowRatio = field.rows === 1 ? 0.5 : row / (field.rows - 1);
-
-      for (let col = 0; col < field.columns; col += 1) {
-        const colRatio = col / Math.max(field.columns - 1, 1);
-        const stagger =
-          (row % 2 === 0 ? 1 : -1) * field.xGap * (0.12 + 0.03 * Math.sin(row * 0.86 + colRatio * 3.1));
-        const rowSkew = Math.sin((rowRatio - 0.5) * Math.PI) * field.xGap * 0.14;
-        const warpX =
-          Math.sin(colRatio * tau * 0.94 + row * 0.53) * 10.5 +
-          Math.cos(col * 0.47 - row * 0.37) * 5.8 +
-          Math.sin((col + row) * 0.18) * 3.8;
-        const baseY =
-          startY +
-          row * field.yGap +
-          Math.sin(col * 0.31 + row * 0.82) * 5.8 +
-          Math.cos(colRatio * tau * 1.18 - row * 0.44) * 3.6 +
-          Math.sin((col - row) * 0.26) * 2.4 +
-          Math.sin(colRatio * Math.PI * 1.15) * (rowRatio - 0.5) * 9.5;
-
-        field.nodes.push({
-          baseX: startX + col * field.xGap + stagger + rowSkew + warpX,
-          baseY,
-          radius: 1.35 + Math.random() * 1.08,
-          phaseA: Math.random() * Math.PI * 2,
-          phaseB: Math.random() * Math.PI * 2,
-          phaseZ: Math.random() * Math.PI * 2,
-          offsetX: 1.8 + Math.random() * 4.4,
-          offsetY: 2.1 + Math.random() * 4.2,
-          depthWave: 14 + Math.random() * 18,
-          depthBias: mix(-12, 76, rowRatio * 0.68 + Math.random() * 0.18),
-          bias: 0.55 + Math.random() * 0.45
-        });
-      }
-    }
-
-    const nodeIndex = (row, col) => row * field.columns + col;
-
-    for (let row = 0; row < field.rows; row += 1) {
-      for (let col = 0; col < field.columns; col += 1) {
-        const source = nodeIndex(row, col);
-
-        if (col < field.columns - 1) {
-          addEdge(edgeSet, source, nodeIndex(row, col + 1), 0.82);
-        }
-
-        if (row < field.rows - 1) {
-          addEdge(edgeSet, source, nodeIndex(row + 1, col), 0.64);
-
-          if (col < field.columns - 1) {
-            if ((row + col) % 2 === 0) {
-              addEdge(edgeSet, source, nodeIndex(row + 1, col + 1), 0.58);
-            } else {
-              addEdge(edgeSet, nodeIndex(row, col + 1), nodeIndex(row + 1, col), 0.58);
-            }
-          }
-        }
-
-        if (col < field.columns - 2 && row < field.rows - 1 && (row + col) % 3 === 0) {
-          addEdge(edgeSet, source, nodeIndex(row, col + 2), 0.24);
-        }
-      }
-    }
-
-    field.energyClusters = [
-      {
-        x: field.width * 0.04,
-        yRatio: 0.3,
-        speed: field.width * 0.022,
-        radiusX: field.width * 0.11,
-        radiusY: field.height * 0.34,
-        strength: 0.74,
-        phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.1,
-        angle: -0.2
-      },
-      {
-        x: field.width * 0.23,
-        yRatio: 0.68,
-        speed: field.width * 0.017,
-        radiusX: field.width * 0.12,
-        radiusY: field.height * 0.27,
-        strength: 0.62,
-        phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.08,
-        angle: 0.18
-      },
-      {
-        x: field.width * 0.48,
-        yRatio: 0.45,
-        speed: field.width * 0.02,
-        radiusX: field.width * 0.105,
-        radiusY: field.height * 0.3,
-        strength: 0.7,
-        phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.09,
-        angle: -0.1
-      },
-      {
-        x: field.width * 0.71,
-        yRatio: 0.61,
-        speed: field.width * 0.018,
-        radiusX: field.width * 0.115,
-        radiusY: field.height * 0.29,
-        strength: 0.66,
-        phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.08,
-        angle: 0.15
-      },
-      {
-        x: field.width * 0.92,
-        yRatio: 0.36,
-        speed: field.width * 0.021,
-        radiusX: field.width * 0.1,
-        radiusY: field.height * 0.32,
-        strength: 0.72,
-        phase: Math.random() * Math.PI * 2,
-        sway: field.height * 0.09,
-        angle: -0.22
-      }
-    ];
-  };
-
-  const resizeField = () => {
-    const parentRect = footerObserver.parentElement?.getBoundingClientRect();
-    if (parentRect) {
-      footerObserver.style.width = `${document.documentElement.clientWidth}px`;
-      footerObserver.style.marginLeft = `${-parentRect.left}px`;
-      footerObserver.style.marginRight = "0px";
-    }
-
-    const rect = footerObserver.getBoundingClientRect();
-    field.width = Math.max(1, Math.floor(rect.width));
-    field.height = Math.max(1, Math.floor(rect.height));
-    field.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    field.canvas.width = Math.max(1, Math.floor(field.width * field.dpr));
-    field.canvas.height = Math.max(1, Math.floor(field.height * field.dpr));
-    field.canvas.style.width = `${field.width}px`;
-    field.canvas.style.height = `${field.height}px`;
-    field.context.setTransform(field.dpr, 0, 0, field.dpr, 0, 0);
-    rebuildField();
-    drawField(performance.now(), true);
-  };
-
-  const computeNodePositions = (timeMs) => {
-    const positions = [];
-    const span = field.xGap * Math.max(field.columns - 1, 1);
-
-    for (const node of field.nodes) {
-      let worldX = node.baseX + field.drift;
-      while (worldX < -field.bufferColumns * field.xGap) {
-        worldX += span;
-      }
-      while (worldX > field.width + field.bufferColumns * field.xGap) {
-        worldX -= span;
-      }
-
-      worldX +=
-        Math.sin(timeMs * 0.00018 + node.phaseA) * node.offsetX +
-        Math.cos(timeMs * 0.00029 + node.phaseB) * 0.8;
-      const worldY =
-        node.baseY +
-        Math.sin(timeMs * 0.00022 + node.phaseB) * node.offsetY +
-        Math.cos(timeMs * 0.00031 + node.phaseA) * 1.1;
-      const z =
-        node.depthBias +
-        Math.sin(timeMs * 0.00017 + node.phaseZ) * node.depthWave +
-        Math.cos(timeMs * 0.00026 + node.phaseA) * 4.6;
-      const perspective = field.perspective / (field.perspective + z);
-      const centeredX = worldX - field.width * 0.5;
-      const centeredY = worldY - field.height * 0.5;
-      const x = field.width * 0.5 + centeredX * perspective;
-      const y = field.height * 0.5 + centeredY * perspective;
-
-      let energy = 0;
-      for (const cluster of field.energyClusters) {
-        const clusterY =
-          field.height * cluster.yRatio +
-          Math.sin(timeMs * 0.0003 + cluster.phase) * cluster.sway * field.currentProfile.swayBoost;
-        const dx = x - cluster.x;
-        const dy = y - clusterY;
-        const cosAngle = Math.cos(cluster.angle);
-        const sinAngle = Math.sin(cluster.angle);
-        const localX = dx * cosAngle + dy * sinAngle;
-        const localY = -dx * sinAngle + dy * cosAngle;
-        const breath = mix(0.72, 0.68 + 0.32 * Math.sin(timeMs * 0.0013 + cluster.phase), field.wakeLevel);
-        const horizontal = (localX * localX) / (2 * cluster.radiusX * cluster.radiusX);
-        const vertical = (localY * localY) / (2 * cluster.radiusY * cluster.radiusY);
-        energy += cluster.strength * field.currentProfile.clusterBoost * breath * Math.exp(-(horizontal + vertical));
-      }
-
-      positions.push({
-        x,
-        y,
-        z,
-        perspective,
-        radius: node.radius * perspective + energy * 0.92,
-        energy,
-        bias: node.bias,
-        depthAlpha: mix(0.34, 0.96, clamp(1 - (z + 18) / 138, 0, 1)),
-        shimmer: 0.28 + 0.2 * Math.sin(timeMs * 0.001 + node.phaseA)
-      });
-    }
-
-    return positions;
-  };
-
-  const drawCluster = (cluster, timeMs, forceStatic = false) => {
-    const ctx = field.context;
-    const clusterY =
-      field.height * cluster.yRatio +
-      Math.sin((forceStatic ? 0 : timeMs) * 0.0003 + cluster.phase) * cluster.sway * field.currentProfile.swayBoost;
-    const breathBase = 0.7 + 0.3 * Math.sin((forceStatic ? 0 : timeMs) * 0.0013 + cluster.phase);
-    const breath = mix(0.72, breathBase, field.wakeLevel);
-    const radiusX = cluster.radiusX * (0.88 + breath * 0.22);
-    const radiusY = cluster.radiusY * (0.92 + breath * 0.18);
-    const strength = cluster.strength * field.currentProfile.clusterBoost;
-    const wakeAlpha = mix(0.24, 1, field.wakeLevel);
-    const warmMix = field.currentProfile.warmShift;
-
-    ctx.save();
-    ctx.translate(cluster.x, clusterY);
-    ctx.rotate(cluster.angle);
-
-    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, radiusX);
-    gradient.addColorStop(0, `rgba(${Math.round(250 + 4 * warmMix)}, ${Math.round(252 - 6 * warmMix)}, 255, ${(0.2 * strength * breath * wakeAlpha).toFixed(3)})`);
-    gradient.addColorStop(0.42, `rgba(${Math.round(241 + 10 * warmMix)}, ${Math.round(247 - 8 * warmMix)}, 249, ${(0.11 * strength * breath * wakeAlpha).toFixed(3)})`);
-    gradient.addColorStop(1, "rgba(241, 247, 249, 0)");
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.ellipse(0, 0, radiusX, radiusY, 0, 0, tau);
-    ctx.fill();
-
-    ctx.fillStyle = `rgba(255, ${Math.round(252 - 10 * warmMix)}, ${Math.round(255 - 18 * warmMix)}, ${(0.06 * strength * breath * wakeAlpha).toFixed(3)})`;
-    ctx.beginPath();
-    ctx.ellipse(radiusX * 0.14, 0, radiusX * 0.34, radiusY * 0.48, 0, 0, tau);
-    ctx.fill();
-    ctx.restore();
-  };
-
-  function drawField(timeMs, forceStatic = false) {
-    if (!field.width || !field.height) {
-      return;
-    }
-
-    const ctx = field.context;
-    ctx.clearRect(0, 0, field.width, field.height);
-
-    const positions = computeNodePositions(forceStatic ? 0 : timeMs);
-    const wakeAlpha = forceStatic ? 0.26 : mix(0.3, 1, field.wakeLevel);
-    const warmMix = field.currentProfile.warmShift;
-    const axialY = field.height * (0.5 + Math.sin((forceStatic ? 0 : timeMs) * 0.00014) * 0.012 * field.currentProfile.swayBoost);
-    field.lastDrawnEdges = 0;
-    field.lastVisibleNodes = positions.filter(
-      (point) =>
-        point.x > -field.xGap * 1.4 &&
-        point.x < field.width + field.xGap * 1.4 &&
-        point.y > -field.yGap &&
-        point.y < field.height + field.yGap
-    ).length;
-
-    ctx.beginPath();
-    for (let step = 0; step <= 18; step += 1) {
-      const t = step / 18;
-      const x = field.width * t;
-      const y =
-        axialY +
-        Math.sin((forceStatic ? 0 : timeMs) * 0.00022 + t * Math.PI * 2.1) *
-          (2.2 + field.currentProfile.swayBoost * 1.8) *
-          mix(0.18, 1, field.wakeLevel);
-
-      if (step === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
-      }
-    }
-    ctx.strokeStyle = `rgba(${Math.round(236 + 8 * warmMix)}, ${Math.round(242 - 6 * warmMix)}, ${Math.round(246 - 12 * warmMix)}, ${Math.min(0.085 * wakeAlpha, 0.12).toFixed(3)})`;
-    ctx.lineWidth = 1.05;
-    ctx.shadowColor = `rgba(${Math.round(236 + 6 * warmMix)}, ${Math.round(242 - 8 * warmMix)}, ${Math.round(246 - 16 * warmMix)}, ${Math.min(0.12 * wakeAlpha, 0.18).toFixed(3)})`;
-    ctx.shadowBlur = 12;
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    for (const cluster of field.energyClusters) {
-      drawCluster(cluster, timeMs, forceStatic);
-    }
-
-    for (const [sourceIndex, targetIndex, weight] of field.edges) {
-      const source = positions[sourceIndex];
-      const target = positions[targetIndex];
-      const dx = target.x - source.x;
-      const dy = target.y - source.y;
-      const depthDelta = Math.abs(source.z - target.z);
-      const screenDistance = Math.hypot(dx, dy);
-      const outOfBoundsMarginX = field.xGap * 1.8;
-      const outOfBoundsMarginY = field.yGap * 1.5;
-
-      if (
-        (source.x < -outOfBoundsMarginX && target.x < -outOfBoundsMarginX) ||
-        (source.x > field.width + outOfBoundsMarginX && target.x > field.width + outOfBoundsMarginX) ||
-        (source.y < -outOfBoundsMarginY && target.y < -outOfBoundsMarginY) ||
-        (source.y > field.height + outOfBoundsMarginY && target.y > field.height + outOfBoundsMarginY)
-      ) {
-        continue;
-      }
-
-      if (Math.abs(dy) > field.yGap * 1.92 || depthDelta > 96 || screenDistance > field.xGap * 2.08) {
-        continue;
-      }
-
-      const energy = Math.min((source.energy + target.energy) * 0.5, 1.3);
-      const alpha =
-        0.042 +
-        weight * 0.052 +
-        ((source.depthAlpha + target.depthAlpha) * 0.5) * 0.058 +
-        energy * 0.12;
-      const boostedAlpha = alpha * field.currentProfile.lineBoost * wakeAlpha;
-      ctx.strokeStyle = `rgba(${Math.round(242 + 6 * warmMix)}, ${Math.round(246 - 6 * warmMix)}, ${Math.round(248 - 12 * warmMix)}, ${Math.min(boostedAlpha, 0.34).toFixed(3)})`;
-      ctx.lineWidth = (0.46 + weight * 0.28 + energy * 0.18) * mix(0.9, field.currentProfile.lineBoost, field.wakeLevel);
-      ctx.beginPath();
-      ctx.moveTo(source.x, source.y);
-      ctx.lineTo(target.x, target.y);
-      ctx.stroke();
-      field.lastDrawnEdges += 1;
-    }
-
-    const depthSorted = [...positions].sort((a, b) => b.z - a.z);
-
-    for (const point of depthSorted) {
-      const alpha =
-        0.17 +
-        point.depthAlpha * 0.21 +
-        point.shimmer * 0.1 +
-        Math.min(point.energy, 1.08) * 0.5;
-      const boostedAlpha = alpha * field.currentProfile.nodeBoost * wakeAlpha;
-      const glow = (1.4 + point.perspective * 2.2 + point.energy * 6.6) * mix(0.88, field.currentProfile.nodeBoost, field.wakeLevel);
-
-      ctx.beginPath();
-      ctx.fillStyle = `rgba(${Math.round(245 + 6 * warmMix)}, ${Math.round(247 - 8 * warmMix)}, ${Math.round(248 - 12 * warmMix)}, ${Math.min(boostedAlpha, 0.92).toFixed(3)})`;
-      ctx.shadowColor = `rgba(${Math.round(255 - 4 * warmMix)}, ${Math.round(255 - 8 * warmMix)}, ${Math.round(255 - 16 * warmMix)}, ${Math.min((0.18 + point.energy * 0.52) * wakeAlpha, 0.84).toFixed(3)})`;
-      ctx.shadowBlur = glow;
-      ctx.arc(point.x, point.y, point.radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.shadowBlur = 0;
-  }
-
-  const tick = (timeMs) => {
-    field.rafId = 0;
-
-    if (!shouldAnimate()) {
-      drawField(timeMs, true);
-      return;
-    }
-
-    const deltaMs = field.lastTime ? Math.min(timeMs - field.lastTime, 40) : field.targetFrameMs;
-    field.lastTime = timeMs;
-    field.frameAccumulator += deltaMs;
-
-    if (field.frameAccumulator < field.targetFrameMs) {
-      field.rafId = window.requestAnimationFrame(tick);
-      return;
-    }
-
-    const stepMs = field.frameAccumulator;
-    field.frameAccumulator = 0;
-    field.tickTime += stepMs;
-    const targetProfile = field.sectionProfiles[runtime.activeSectionId] ?? field.sectionProfiles.home;
-    field.currentProfile.lineBoost = mix(field.currentProfile.lineBoost, targetProfile.lineBoost, 0.08);
-    field.currentProfile.nodeBoost = mix(field.currentProfile.nodeBoost, targetProfile.nodeBoost, 0.08);
-    field.currentProfile.clusterBoost = mix(field.currentProfile.clusterBoost, targetProfile.clusterBoost, 0.08);
-    field.currentProfile.driftBoost = mix(field.currentProfile.driftBoost, targetProfile.driftBoost, 0.08);
-    field.currentProfile.clusterSpeed = mix(field.currentProfile.clusterSpeed, targetProfile.clusterSpeed, 0.08);
-    field.currentProfile.swayBoost = mix(field.currentProfile.swayBoost, targetProfile.swayBoost, 0.08);
-    field.currentProfile.warmShift = mix(field.currentProfile.warmShift, targetProfile.warmShift, 0.08);
-    const targetWake = easeInOut(clamp((field.visibilityRatio - 0.04) / 0.36, 0, 1));
-    field.wakeLevel = mix(field.wakeLevel, targetWake, 0.1);
-    field.drift -= stepMs * 0.018 * field.currentProfile.driftBoost * mix(0.24, 1, field.wakeLevel);
-    const wrapSpan = field.xGap * Math.max(field.columns - field.bufferColumns * 2 - 1, 1);
-    if (Math.abs(field.drift) > wrapSpan) {
-      field.drift += wrapSpan;
-    }
-
-    for (const cluster of field.energyClusters) {
-      cluster.x += cluster.speed * field.currentProfile.clusterSpeed * mix(0.2, 1, field.wakeLevel) * (stepMs / 1000);
-      if (cluster.x - cluster.radiusX > field.width + cluster.radiusX * 0.22) {
-        cluster.x = -cluster.radiusX * 1.24;
-      }
-    }
-
-    drawField(field.tickTime);
-    field.rafId = window.requestAnimationFrame(tick);
-  };
-
-  const syncFieldAnimation = () => {
-    if (shouldAnimate()) {
-      if (!field.rafId) {
-        field.lastTime = 0;
-        field.frameAccumulator = field.targetFrameMs;
-        field.rafId = window.requestAnimationFrame(tick);
-      }
-    } else if (field.rafId) {
-      window.cancelAnimationFrame(field.rafId);
-      field.rafId = 0;
-      drawField(performance.now(), true);
-    } else {
-      drawField(performance.now(), true);
-    }
-  };
-
-  field.intersectionObserver = new IntersectionObserver(
-    (entries) => {
-      const entry = entries[0];
-      field.visible = entry?.isIntersecting ?? false;
-      field.visibilityRatio = entry?.intersectionRatio ?? 0;
-      syncFieldAnimation();
-    },
-    { threshold: [0, 0.05, 0.12, 0.2, 0.32, 0.5, 0.72, 1] }
-  );
-  field.intersectionObserver.observe(footerObserver);
-
-  if ("ResizeObserver" in window) {
-    field.resizeObserver = new ResizeObserver(() => {
-      resizeField();
-      syncFieldAnimation();
-    });
-    field.resizeObserver.observe(footerObserver);
-  } else {
-    window.addEventListener("resize", resizeField);
-  }
-
-  document.addEventListener("visibilitychange", syncFieldAnimation);
-  window.__maccFooterField = {
-    getState: () => ({
-      drawnEdges: field.lastDrawnEdges,
-      visibleNodes: field.lastVisibleNodes,
-      wakeLevel: Number(field.wakeLevel.toFixed(3)),
-      visibilityRatio: Number(field.visibilityRatio.toFixed(3)),
-      clusters: field.energyClusters.map((cluster) => ({
-        x: Number(cluster.x.toFixed(2)),
-        yRatio: cluster.yRatio,
-        radiusX: Number(cluster.radiusX.toFixed(2)),
-        radiusY: Number(cluster.radiusY.toFixed(2))
-      }))
-    })
-  };
-  resizeField();
-  syncFieldAnimation();
-}
 
 function init() {
   renderNavigation();
   renderHero();
-  bindNewsPager();
   renderMembers();
+  renderFooter();
   renderStackList(siteContent.publications, publicationsList);
+  bindCitations(publicationsList, siteContent.publications);
   bindPublicationReadingGuide();
   renderCardGrid(siteContent.projects, projectsGrid, "project-card");
   renderStackList(siteContent.patents, patentsList);
@@ -1177,7 +658,7 @@ function init() {
   runtime.updateActiveNavigation = bindActiveNavigation();
   bindPointerVisualResponse();
   bindFloatingMonogram();
-  bindFooterObserverField();
+  bindFooterField(footerObserver, footerCanvas, prefersReducedMotion);
   cacheLayoutMetrics();
   updatePageVisualRelease();
   scheduleVisualFrame();

@@ -1,13 +1,29 @@
+import { createExampleCitations } from "./citation-examples.js";
+
 export const siteContent = {
   team: {
     name: "Multi-Agent Cognition and Collaboration Team",
-    titleLines: ["Multi-Agent", "Cognition", "& Collaboration"],
+    // Chinese name and research phrases remain editable demonstration copy.
+    titleLines: ["多智能体认知", "与协同团队"],
     englishName: "Multi-Agent Cognition and Collaboration Team",
+    researchDirections: ["多智能体系统", "认知与推理", "协同智能"],
     acronym: "MACC",
     markLabel: "Multi-Agent Cognition and Collaboration",
     summary:
-      "We investigate how multiple agents perceive, reason, and coordinate to build reliable intelligent systems across dynamic, distributed environments."
+      "We investigate how multiple agents perceive, reason, and coordinate to build reliable intelligent systems across dynamic, distributed environments.",
+    recruitment: {
+      text: "招生示例：欢迎对多智能体与协同智能感兴趣的同学联系团队。",
+      href: "#contact"
+    }
   },
+  contact: {
+    isExample: true,
+    email: "macc@example.edu",
+    phone: "023-0000 0000",
+    office: "重庆师范大学 · 示例楼宇 000 室",
+    filing: { text: "", href: "" }
+  },
+  // Reorder these objects to reorder both navigation and body sections. Home stays first.
   navigation: [
     { id: "home", label: "Home" },
     { id: "members", label: "Members" },
@@ -78,129 +94,80 @@ export const siteContent = {
       href: "https://www.ntu.edu.sg/computing/news-events/news/detail/two-acm-sigsoft-distinguished-paper-awards-at-issta-2022"
     }
   ],
+  memberGroups: [
+    { id: "teachers", label: "Teachers", color: "#b7d7bd" },
+    { id: "collaborators", label: "Collaborators", color: "#dccb9d" },
+    { id: "students", label: "Students", color: "#b4ccdf" }
+  ],
+  membersNotice: "示例成员名单 · 人像为生成样张，非真实团队成员。",
   members: [
     {
-      initials: "HY",
-      hue: 193,
-      name: "Han Yu",
-      role: "Investigator",
-      group: "Investigators",
-      image: "https://trustful.federated-learning.org/Photos/hyu.png",
-      portraitPosition: "50% 22%",
-      portraitBackdropPosition: "50% 18%",
-      portraitScale: "1.06",
-      bio: "Works on trustworthy decision-making, agent collaboration, and human-centered intelligence in distributed settings.",
-      href: "http://hanyu.sg/"
+      name: "Lin Chen", initials: "LC", group: "teachers",
+      role: "Professor", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     },
     {
-      initials: "YL",
-      hue: 164,
-      name: "Yang Liu",
-      role: "Investigator",
-      group: "Investigators",
-      image: "https://trustful.federated-learning.org/Photos/LY.jpg",
-      portraitPosition: "50% 18%",
-      portraitBackdropPosition: "50% 16%",
-      portraitScale: "1.12",
-      bio: "Focuses on secure machine learning, trustworthy systems, and robust collaborative intelligence.",
-      href: "https://personal.ntu.edu.sg/yangliu/"
+      name: "Jia Xu", initials: "JX", group: "teachers",
+      role: "Professor", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     },
     {
-      initials: "CM",
-      hue: 34,
-      name: "Chunyan Miao",
-      role: "Investigator",
-      group: "Investigators",
-      image: "https://trustful.federated-learning.org/Photos/MCY.png",
-      portraitPosition: "50% 18%",
-      portraitBackdropPosition: "50% 16%",
-      portraitScale: "1.11",
-      bio: "Studies agent reasoning, social intelligence, and computational models of collaboration at scale.",
-      href: "https://scholar.google.com.sg/citations?user=fmXGRJgAAAAJ&hl=en"
+      name: "Wei Zhou", initials: "WZ", group: "teachers",
+      role: "Professor", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     },
     {
-      initials: "DN",
-      hue: 216,
-      name: "Dusit Niyato",
-      role: "Investigator",
-      group: "Investigators",
-      image: "https://trustful.federated-learning.org/Photos/tao2020.jpg",
-      portraitPosition: "50% 20%",
-      portraitBackdropPosition: "50% 18%",
-      portraitScale: "1.1",
-      bio: "Explores communication-aware AI systems, learning over networks, and adaptive distributed optimization.",
-      href: "https://personal.ntu.edu.sg/dniyato/"
+      name: "Ning Wang", initials: "NW", group: "teachers",
+      role: "Professor", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     },
     {
-      initials: "RL",
-      hue: 182,
-      name: "Rui Liu",
-      role: "Research Fellow",
-      group: "Research Staff",
-      image: "https://trustful.federated-learning.org/Photos/LR.jpg",
-      portraitPosition: "50% 16%",
-      portraitBackdropPosition: "50% 14%",
-      portraitScale: "1.14",
-      bio: "Develops reliable learning methods for collaborative agents operating under shifting data and deployment constraints.",
-      href: "https://sg.linkedin.com/in/rui-liu-cc"
+      name: "Ming Li", initials: "ML", group: "collaborators",
+      role: "Research Partner", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     },
     {
-      initials: "CR",
-      hue: 12,
-      name: "Chao Ren",
-      role: "Wallenberg-NTU PPF",
-      group: "Research Staff",
-      image: "https://trustful.federated-learning.org/Photos/RenChao.jpg",
-      portraitPosition: "50% 18%",
-      portraitBackdropPosition: "50% 16%",
-      portraitScale: "1.12",
-      bio: "Investigates foundation models, decentralized adaptation, and efficient optimization across compound AI systems.",
-      href: "https://rccccc-95.github.io/"
+      name: "Yue Zhao", initials: "YZ", group: "collaborators",
+      role: "Research Partner", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     },
     {
-      initials: "XT",
-      hue: 151,
-      name: "Xiaoli Tang",
-      role: "Research Fellow",
-      group: "Research Staff",
-      image: "https://trustful.federated-learning.org/Photos/TangXiaoli.jpg",
-      portraitPosition: "50% 16%",
-      portraitBackdropPosition: "50% 14%",
-      portraitScale: "1.12",
-      bio: "Studies auction-based federated learning and coordination mechanisms for large-scale multi-agent environments.",
-      href: "https://xiaoli543.github.io"
+      name: "Kai Sun", initials: "KS", group: "collaborators",
+      role: "Research Partner", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     },
     {
-      initials: "YZ",
-      hue: 240,
-      name: "Yansong Zhao",
-      role: "PhD Student",
-      group: "PhD Students",
-      image: "https://trustful.federated-learning.org/Photos/ZhaoYansong.jpg",
-      portraitPosition: "50% 18%",
-      portraitBackdropPosition: "50% 16%",
-      portraitScale: "1.1",
-      bio: "Works on cooperative intelligence, robust aggregation, and agent behaviors in distributed learning pipelines.",
-      href: "https://sg.linkedin.com/in/bill-zhaoyansong"
+      name: "An Wu", initials: "AW", group: "collaborators",
+      role: "Research Partner", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     },
     {
-      initials: "HP",
-      hue: 82,
-      name: "Hongyi Peng",
-      role: "PhD Student",
-      group: "PhD Students",
-      image: "https://trustful.federated-learning.org/Photos/HongyiPeng.jpg",
-      portraitPosition: "50% 16%",
-      portraitBackdropPosition: "50% 14%",
-      portraitScale: "1.1",
-      bio: "Explores practical systems for trustworthy model collaboration and deployment-aware multi-agent coordination.",
-      href: "https://sg.linkedin.com/in/hongyi-peng-63774a119"
+      name: "Yu Zhang", initials: "YZ", group: "students",
+      role: "Graduate Student", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
+    },
+    {
+      name: "Qing Liu", initials: "QL", group: "students",
+      role: "Graduate Student", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
+    },
+    {
+      name: "Tao He", initials: "TH", group: "students",
+      role: "Graduate Student", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
+    },
+    {
+      name: "Ran Ma", initials: "RM", group: "students",
+      role: "Graduate Student", image: "./assets/portraits/sample-researcher.png",
+      bio: "Research interests include multi-agent learning and collaborative intelligence."
     }
   ],
   publications: [
     {
       meta: "2026 / Journal Article / IEEE Transactions on Mobile Computing",
       title: "Fisher-based layer-wise adaptive sparsification for efficient pruning of large language models",
+      // Replace example citations with verified text before publication.
+      citationExample: true,
       summary: "A pruning framework that uses Fisher-informed layer sensitivity to remove redundant parameters from large language models while preserving downstream performance.",
       href: "https://ieeexplore.ieee.org/abstract/document/11501762"
     },
@@ -338,3 +305,11 @@ export const siteContent = {
     }
   ]
 };
+
+// Preview-only default: an explicit citations object (even empty) takes precedence.
+siteContent.publications.forEach((publication, index) => {
+  if (!publication.citations) {
+    publication.citations = createExampleCitations(publication.title, index);
+    publication.citationExample = true;
+  }
+});

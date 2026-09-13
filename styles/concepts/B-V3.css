@@ -1,0 +1,2 @@
+.tides-backdrop{--visual-outline-opacity:.42;--visual-ring-main-alpha:.19;--visual-ring-warm-alpha:.12;}.tides-legend{gap:8px 12px;}.tides-caption{flex-wrap:wrap;}
+.iteration-links{position:relative;z-index:5;display:flex;gap:20px;flex-wrap:wrap;justify-content:center;padding:8px 24px;font:12px var(--mono);color:#a8bdbc}.iteration-links a[aria-current="page"]{color:#e1f4ef;border-bottom:1px solid #8fd9d2}.iteration-links a:hover{color:#e1f4ef}.iteration-links a{padding:4px 0}

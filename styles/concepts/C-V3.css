@@ -1,0 +1,11 @@
+.iteration-links{position:relative;z-index:5;display:flex;gap:20px;flex-wrap:wrap;justify-content:center;padding:8px 24px;font:12px var(--mono);color:#a8bdbc}.iteration-links a[aria-current="page"]{color:#e1f4ef;border-bottom:1px solid #8fd9d2}.iteration-links a:hover{color:#e1f4ef}.iteration-links a{padding:4px 0}
+
+body{background:radial-gradient(ellipse at 53% 52%,#172c33 0,#101c27 42%,#0c1420 78%);}
+.topology-visual__frame{aspect-ratio:1;overflow:hidden;}
+@media(min-width:1000px){
+ .hero__grid{grid-template-columns:minmax(210px,.85fr) minmax(0,1.8fr) minmax(200px,.65fr);gap:26px;}
+ .hero__intro{grid-column:1;grid-row:1;}.tides-study{grid-column:2;grid-row:1;}.hero__news{grid-column:3;grid-row:1;padding-top:30px;width:auto;}
+ .news-panel{padding:0 0 0 20px;border-top:0;border-left:1px solid rgba(158,223,214,.15);}
+ .news-panel__list{display:block;}.news-item{padding:22px 0!important;}.news-item+.news-item{border-top:1px solid rgba(158,223,214,.13)!important;}
+ .hero__title{font-size:clamp(36px,3.5vw,61px);}.tides-caption{flex-wrap:wrap;margin-top:0;}
+}

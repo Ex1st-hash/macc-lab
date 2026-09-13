@@ -1,0 +1,152 @@
+/* Keep the concept's composition while sharing the live homepage below it. */
+html:has(body[data-center-concept]) {
+  overflow-x: clip;
+}
+
+body[data-center-concept] {
+  background-attachment: fixed;
+  overflow-x: clip;
+}
+
+.site-header__inner {
+  max-width: 1680px;
+}
+
+/* The original scroll controller owns the logo and its header handoff. */
+.hero__monogram-anchor {
+  visibility: hidden;
+}
+
+@media (min-width: 761px) {
+  .floating-monogram {
+    display: grid;
+    left: 0;
+    top: 0;
+    z-index: 90;
+  }
+}
+
+@media (max-width: 760px) {
+  .hero__monogram-anchor {
+    display: none;
+  }
+}
+
+.center-visual-anchor {
+  width: 100%;
+  contain: none;
+  overflow: visible;
+}
+
+.page-visual--concept {
+  --pointer-x: 0;
+  --pointer-y: 0;
+  position: fixed;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  z-index: 1;
+  opacity: var(--visual-opacity, 1);
+  transform: translate3d(0, var(--visual-release-y, 0px), 0);
+}
+
+.page-visual--concept > .page-visual__frame {
+  position: absolute;
+  left: var(--concept-left, 0px);
+  top: var(--concept-top, 0px);
+  width: var(--concept-width, 0px);
+  height: var(--concept-height, 0px);
+  aspect-ratio: auto;
+  max-width: none;
+  transform: none;
+  opacity: 1;
+  contain: none;
+  pointer-events: none;
+}
+
+.page-visual--concept .topology-visual__frame {
+  width: 100%;
+  height: 100%;
+}
+
+.content-section {
+  isolation: isolate;
+  /* Stable document height keeps the existing footer fade continuous. */
+  content-visibility: visible;
+  contain-intrinsic-size: none;
+}
+
+@media (min-width: 1101px) {
+  body:is([data-center-concept^="A-"], [data-center-concept="B-V3"]) {
+    --center-scene: 1;
+    --scene-focus-y: 0.53;
+  }
+
+  body[data-center-concept="B-V3"] {
+    --scene-focus-y: 0.52;
+  }
+
+  body:is([data-center-concept^="A-"], [data-center-concept="B-V3"]) .hero {
+    min-height: calc(100svh - var(--header-height) - 24px);
+    padding-top: 24px;
+    padding-bottom: 24px;
+  }
+
+  body:is([data-center-concept^="A-"], [data-center-concept="B-V3"]) .hero__grid {
+    grid-template-columns: minmax(320px, 1fr) minmax(0, 1.8fr) minmax(320px, 1fr);
+  }
+
+  body:is([data-center-concept^="A-"], [data-center-concept="B-V3"]) .tides-study {
+    /* The original halo extends to 130% of the canvas. */
+    width: min(100%, calc((100svh - var(--header-height) - 48px) / 1.3));
+    justify-self: center;
+  }
+}
+
+@media (min-width: 1000px) {
+  body[data-center-concept="C-V3"] .page-visual--concept > .page-visual__frame {
+    left: calc(var(--concept-left, 0px) - 24px);
+    /* The globe ends at 63% + 30.5% of the canvas; leave room for its rim. */
+    top: min(
+      calc(var(--concept-top, 0px) - 64px),
+      calc(100svh - var(--concept-height, 0px) * 0.935 - 28px)
+    );
+  }
+
+  body[data-center-concept="C-V3"] .page-visual--concept .topology-visual__frame,
+  body[data-center-concept="C-V3"] .page-visual--concept .topology-field {
+    contain: none;
+    overflow: visible;
+  }
+
+  body[data-center-concept="C-V3"] .topology-field__canvas {
+    /* Extra paint space only; the renderer keeps the original square geometry. */
+    width: 112%;
+  }
+}
+
+/* The reference concepts place the full scene between intro and news on phones. */
+@media (max-width: 700px) {
+  .site-header__inner {
+    padding: 16px 20px;
+    gap: 14px;
+  }
+
+  .center-visual-anchor {
+    position: relative;
+  }
+
+  .center-visual-anchor > .page-visual--concept {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: none;
+  }
+
+  .page-visual--concept > .page-visual__frame {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+}

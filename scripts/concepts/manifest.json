@@ -1,0 +1,45 @@
+[
+  {
+    "variant": "A-V1",
+    "sourceSha256": "52dc1f95a814d3ee89139fd7f7579caf4adec820051215249f481ae2434ad74e",
+    "animationSha256": "68059c931fd215387c9c93a23c6d72a6c67f43f25b16ec24bd2f1facc8ad17bd",
+    "page": "A-V1.html"
+  },
+  {
+    "variant": "A-V2",
+    "sourceSha256": "f08a96d7d646edbcaa934d482ae95ab1259b0ebea124dd09455deb9e61608c1b",
+    "animationSha256": "5c98203e160388b690b4bd15e7d0fe8273271b6d2e3b88a42bd65ffb4e68e68e",
+    "page": "A-V2.html"
+  },
+  {
+    "variant": "A-V3",
+    "sourceSha256": "ddbf0f7e1533f07dbb95590e8404ec61efd4965bea16eaa130c8b57cc3287d51",
+    "animationSha256": "c1e6a5096b31281e78fde1cbc3f8512f2b77251a65d0e913cfd8af95199914f4",
+    "page": "A-V3.html"
+  },
+  {
+    "variant": "B-V3",
+    "sourceSha256": "ed9c29079599882b77fd1ed7a893fcde326ecbe88e323da5b65cc67ecc62db2b",
+    "animationSha256": "714fd2f7680f6963da9c5428f7acc9139cb137a4cedc40479eea7de0c5a071c9",
+    "page": "B-V3.html"
+  },
+  {
+    "variant": "C-V1",
+    "sourceSha256": "e8b35baf467f3afcae79feb9a44e0464ef8a06c0de42b4b90883bfa999cf17a0",
+    "animationSha256": "3ca1591c8a821b2465557a15556bd0b78cade1eaedc573db9d754d2c5fe6ee5e",
+    "page": "C-V1.html"
+  },
+  {
+    "variant": "C-V2",
+    "sourceSha256": "4f553d096b9be511566d98a3b2210d0ea8c83b119f4796f27517ff21ef70f510",
+    "animationSha256": "968770bc3a06cd546f1ad5961ca811a771b579410176d81de6062d83eaf61bd8",
+    "page": "C-V2.html"
+  },
+  {
+    "variant": "C-V3",
+    "sourceSha256": "f4f7ecd2c52f5a27cdadcd0f62f4809dc62452105c532df8f051652061147256",
+    "animationSha256": "805645dcd2e04fe404cc02aa59d7337a2334429ad777f8489aea918b85e72b91",
+    "renderedAnimationSha256": "b94ad52041b9adeaad496ea621c99e92bc73fa4ab5b9038b8535880659ac958f",
+    "page": "C-V3.html"
+  }
+]

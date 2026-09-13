@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -130,6 +130,76 @@ try {
   await fallback.screenshot({ path: path.join(output, "fallback.png") });
   await fallback.close();
   console.log("PASS no-WebGL static fallback");
+
+  const runtimePath = "**/assets/vendor/three/footer-runtime.min.js";
+  const slow = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  let releaseRuntime;
+  const download = new Promise(resolve => { releaseRuntime = resolve; });
+  const requests = [];
+  slow.on("request", request => { if (request.url().includes("/vendor/three/")) requests.push(request.url()); });
+  await slow.route(runtimePath, async route => { await download; await route.continue(); });
+  await slow.goto(baseURL, { waitUntil: "domcontentloaded" });
+  await slow.waitForFunction(() => window.__maccFooterField?.getState().loading);
+  const warm = await sample(slow);
+  assert.equal(warm.loadReason, "idle", "Runtime was not prepared in the background");
+  assert.equal(warm.visibilityRatio, 0);
+  assert.equal(warm.animating, false);
+  assert.equal(await slow.locator("html").getAttribute("data-entrance"), "ready", "Footer download competed with the entrance");
+  await slow.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+  await slow.waitForTimeout(150);
+  const preview = await sample(slow);
+  assert.equal(preview.renderer, "pending");
+  assert(preview.lit > 1000 && preview.border === 0 && preview.dark === 0, "Cold-load preview is blank or has dark edges");
+  await slow.locator("[data-footer-observer]").screenshot({ path: path.join(output, "loading-preview.png") });
+  await slow.waitForTimeout(1800);
+  assert((await sample(slow)).lit > 1000, "A stalled download removed the preview");
+  releaseRuntime();
+  await slow.waitForFunction(() => window.__maccFooterField.getState().renderer === "webgl");
+  await slow.waitForTimeout(350);
+  assert.equal(await slow.locator("[data-footer-canvas]").count(), 1);
+  assert.equal(await slow.locator("[data-footer-preview]").count(), 0);
+  assert((await sample(slow)).lit > 1000);
+  assert.equal(requests.length, 1, "Footer should load one self-contained runtime");
+  await slow.locator("[data-footer-observer]").screenshot({ path: path.join(output, "loading-ready.png") });
+  await slow.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
+  await slow.waitForTimeout(100);
+  assert.equal((await sample(slow)).animating, false, "Offscreen footer kept running");
+  await slow.close();
+  console.log("PASS cold load: idle preload after entrance, immediate transparent preview, one runtime request, seamless handoff");
+
+  for (const connection of [{ saveData: true, effectiveType: "4g" }, { saveData: false, effectiveType: "2g" }]) {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    await page.addInitScript(connection => Object.defineProperty(navigator, "connection", { value: connection, configurable: true }), connection);
+    await page.goto(baseURL, { waitUntil: "networkidle" });
+    await page.waitForTimeout(1100);
+    assert.equal((await sample(page)).loadReason, null, "Save-data/slow network downloaded the runtime eagerly");
+    await page.evaluate(() => {
+      const top = document.querySelector("[data-footer-observer]").getBoundingClientRect().top + scrollY;
+      scrollTo({ top: top - innerHeight - 1200, behavior: "instant" });
+    });
+    await page.waitForFunction(() => window.__maccFooterField.getState().renderer === "webgl");
+    assert.equal((await sample(page)).loadReason, "nearby");
+    assert.equal((await sample(page)).visibilityRatio, 0, "Near-viewport warmup happened too late");
+    await page.close();
+  }
+  console.log("PASS save-data and 2G: deferred runtime, prepared 1200px before the footer enters view");
+
+  const failed = await browser.newPage();
+  await failed.route(runtimePath, route => route.abort());
+  await failed.goto(baseURL, { waitUntil: "domcontentloaded" });
+  await reveal(failed);
+  const failedState = await sample(failed);
+  assert.equal(failedState.renderer, "fallback");
+  assert(failedState.lit > 1000 && failedState.dark === 0 && failedState.border === 0);
+  await failed.setViewportSize({ width: 390, height: 844 });
+  await reveal(failed);
+  assert((await sample(failed)).lit > 1000);
+  await failed.close();
+  const vendor = path.join(root, "assets", "vendor", "three");
+  const originalBytes = (await readFile(path.join(vendor, "three.module.js"))).length + (await readFile(path.join(vendor, "three.core.js"))).length;
+  const runtimeBytes = (await readFile(path.join(vendor, "footer-runtime.min.js"))).length;
+  assert(runtimeBytes < originalBytes * 0.3, "Footer runtime payload regressed");
+  console.log(`PASS failed download: responsive static fallback; runtime ${originalBytes} -> ${runtimeBytes} bytes`);
   await writeFile(path.join(output, "report.json"), JSON.stringify(report, null, 2));
 } finally {
   await browser.close();

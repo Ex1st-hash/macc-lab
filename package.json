@@ -7,12 +7,17 @@
     "test:monogram": "node tools/verify-monogram.mjs",
     "test:meeting": "node tools/verify-meeting.mjs",
     "test:footer": "node tools/verify-footer.mjs",
+    "test:layout": "node tools/verify-layout.mjs",
+    "test:presentation": "node --test tests/hero-markup.test.mjs && node tools/verify-presentation.mjs",
     "build:site": "node tools/build-site.mjs",
+    "build:hero": "node tools/prepare-homepages.mjs",
+    "build:footer": "node tools/build-footer-runtime.mjs",
     "select:concept": "node tools/select-concept.mjs",
     "build:concepts": "node tools/import-concepts.mjs",
     "test:concepts": "node tools/verify-concepts.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "lucide-static": "^1.45.0",
     "parse5": "^8.0.1",
     "playwright": "^1.63.0",

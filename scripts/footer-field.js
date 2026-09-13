@@ -18,10 +18,14 @@ export function bindFooterField(element, initialCanvas, reducedMotion) {
     renderer: "pending", width: 0, height: 0, dpr: 1, time: 0, frame: 0,
     lastFrame: 0, visible: false, visibilityRatio: 0, loading: false, lost: false,
     worldWidth: 1200, nodes: [], edges: [], faces: [], depthRange: [0, 0],
-    pointerX: 0, pointerY: 0, cameraX: 0, cameraY: 0
+    pointerX: 0, pointerY: 0, cameraX: 0, cameraY: 0,
+    loadReason: null, loadStarted: 0, readyAt: 0
   };
   let THREE, renderer, scene, camera, pointsGeometry, linesGeometry, surfaceGeometry, pointMaterial, lineMaterial, surfaceMaterial;
-  let fallback;
+  let fallback = canvas.getContext("2d");
+  canvas.dataset.footerPreview = "";
+  let warmupTask = null;
+  let entranceObserver;
   const positions = [];
   const palette = [[0.58, 0.84, 0.79], [0.86, 0.75, 0.53]];
   const canAnimate = () => state.visible && !state.lost && !document.hidden && !reducedMotion.matches && innerWidth > 760 && state.renderer === "webgl";
@@ -186,28 +190,73 @@ export function bindFooterField(element, initialCanvas, reducedMotion) {
   function drawFallback() {
     const ctx = fallback;
     ctx.clearRect(0, 0, state.width, state.height);
-    const projected = positions.map(point => ({
-      x: state.width / 2 + point.x / state.worldWidth * state.width,
-      y: state.height / 2 - point.y / 200 * state.height,
-      fade: smooth((point.x / state.worldWidth + 0.5) / 0.08) * smooth((0.5 - point.x / state.worldWidth) / 0.08)
-    }));
+    const distance = Math.hypot(58, 620);
+    const sin = 58 / distance, cos = 620 / distance;
+    // Match the WebGL camera so the zero-download preview has the same ribbon silhouette.
+    const projected = positions.map(point => {
+      const depth = distance - point.y * sin - point.z * cos;
+      const scale = state.height / (2 * Math.tan(26 * Math.PI / 360) * depth);
+      const x = state.width / 2 + point.x * scale;
+      const y = state.height / 2 - (point.y * cos - point.z * sin) * scale;
+      const fade = smooth((x - 5) / (state.width * 0.065 - 5)) * smooth((state.width - x - 5) / (state.width * 0.065 - 5))
+        * smooth((y - 5) / (state.height * 0.18 - 5)) * smooth((state.height - y - 5) / (state.height * 0.18 - 5));
+      return { x, y, fade, size: point.size * clamp(620 / depth, 0.55, 1.8) };
+    });
     state.edges.forEach(([a, b, weight]) => {
       const p = projected[a], q = projected[b];
-      ctx.strokeStyle = `rgba(150,208,196,${0.16 * weight * Math.min(p.fade, q.fade)})`;
+      const point = positions[a];
+      const alpha = (0.08 + point.depth * 0.16 + point.light * 0.18) * weight * (state.nodes[a].layer ? 0.62 : 1);
+      ctx.strokeStyle = `rgba(${point.color.map(value => Math.round(value * 255)).join(",")},${alpha * Math.min(p.fade, q.fade)})`;
       ctx.lineWidth = 0.65;
       ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
     });
     projected.forEach((p, index) => {
-      ctx.fillStyle = `rgba(${state.nodes[index].layer ? "215,193,150" : "192,230,218"},${p.fade * 0.7})`;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 1.2, 0, Math.PI * 2); ctx.fill();
+      const point = positions[index];
+      ctx.fillStyle = `rgba(${point.color.map(value => Math.round(value * 255)).join(",")},${p.fade * point.alpha})`;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size * 0.2, 0, Math.PI * 2); ctx.fill();
     });
   }
 
-  async function initialize() {
+  function cancelWarmup() {
+    if (warmupTask !== null) {
+      if ("cancelIdleCallback" in window) cancelIdleCallback(warmupTask);
+      else clearTimeout(warmupTask);
+      warmupTask = null;
+    }
+    entranceObserver?.disconnect();
+  }
+
+  function scheduleWarmup() {
+    const connection = navigator.connection;
+    if (document.hidden || document.readyState !== "complete" || state.loading || state.renderer !== "pending" || warmupTask !== null) return;
+    if (connection?.saveData || ["slow-2g", "2g"].includes(connection?.effectiveType)) return;
+    if (["pending", "revealing"].includes(document.documentElement.dataset.entrance)) {
+      if (!entranceObserver) {
+        entranceObserver = new MutationObserver(scheduleWarmup);
+        entranceObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-entrance"] });
+      }
+      return;
+    }
+    entranceObserver?.disconnect();
+    const warm = () => { warmupTask = null; if (!document.hidden) initialize("idle"); };
+    warmupTask = "requestIdleCallback" in window
+      ? requestIdleCallback(warm, { timeout: 2000 })
+      : setTimeout(warm, 800);
+  }
+
+  async function initialize(reason = "nearby") {
     if (state.loading || state.renderer !== "pending") return;
+    cancelWarmup();
     state.loading = true;
+    state.loadReason = reason;
+    state.loadStarted = performance.now();
+    const preview = canvas;
+    const previewContext = fallback;
     try {
-      THREE = await import("../assets/vendor/three/three.module.js");
+      THREE = await import("../assets/vendor/three/footer-runtime.min.js");
+      // Keep the 2D preview in place until the new context has rendered its first frame.
+      canvas = preview.cloneNode(false);
+      canvas.removeAttribute("data-footer-preview");
       renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: "low-power" });
       renderer.setClearColor(0x000000, 0);
       scene = new THREE.Scene();
@@ -269,17 +318,25 @@ export function bindFooterField(element, initialCanvas, reducedMotion) {
           }`
       });
       state.renderer = "webgl";
+      fallback = null;
       buildTopology();
       canvas.addEventListener("webglcontextlost", event => { event.preventDefault(); state.lost = true; syncAnimation(); });
       canvas.addEventListener("webglcontextrestored", () => { state.lost = false; resize(); });
+      resize();
+      preview.removeAttribute("data-footer-canvas");
+      element.append(canvas);
+      setTimeout(() => preview.remove(), reducedMotion.matches ? 0 : 280);
     } catch (error) {
       console.warn("Footer WebGL unavailable; using a transparent static topology.", error);
       renderer?.dispose(); renderer = null;
-      const replacement = canvas.cloneNode(false);
-      canvas.replaceWith(replacement); canvas = replacement;
-      fallback = canvas.getContext("2d");
+      pointsGeometry?.dispose(); linesGeometry?.dispose(); surfaceGeometry?.dispose();
+      pointMaterial?.dispose(); lineMaterial?.dispose(); surfaceMaterial?.dispose();
+      canvas = preview;
+      fallback = previewContext;
       state.renderer = "fallback";
     }
+    state.loading = false;
+    state.readyAt = performance.now();
     element.dataset.footerRenderer = state.renderer;
     resize();
   }
@@ -287,19 +344,20 @@ export function bindFooterField(element, initialCanvas, reducedMotion) {
   const visibleObserver = new IntersectionObserver(([entry]) => {
     state.visible = entry.isIntersecting;
     state.visibilityRatio = entry.intersectionRatio;
-    if (state.visible) initialize();
+    if (state.visible) initialize("visible");
     syncAnimation();
   }, { threshold: [0, 0.01, 0.25, 0.5, 1] });
   visibleObserver.observe(element);
   const preload = new IntersectionObserver(([entry]) => {
     if (entry.isIntersecting) { initialize(); preload.disconnect(); }
-  }, { rootMargin: "500px 0px" });
+  }, { rootMargin: "1600px 0px" });
   preload.observe(element);
   const observer = new ResizeObserver(resize);
   observer.observe(element);
   observer.observe(element.parentElement);
   window.addEventListener("resize", resize);
-  document.addEventListener("visibilitychange", syncAnimation);
+  document.addEventListener("visibilitychange", () => { syncAnimation(); scheduleWarmup(); });
+  window.addEventListener("load", scheduleWarmup, { once: true });
   reducedMotion.addEventListener("change", () => { state.pointerX = state.pointerY = 0; resize(); });
   element.addEventListener("pointermove", event => {
     if (event.pointerType !== "mouse" || reducedMotion.matches) return;
@@ -312,9 +370,11 @@ export function bindFooterField(element, initialCanvas, reducedMotion) {
     getState: () => ({
       renderer: state.renderer, drawnEdges: state.edges.length, visibleNodes: state.nodes.length,
       width: state.width, height: state.height, time: state.time, visibilityRatio: state.visibilityRatio,
-      depthRange: state.depthRange, cameraX: state.cameraX, cameraY: state.cameraY, animating: Boolean(state.frame)
+      depthRange: state.depthRange, cameraX: state.cameraX, cameraY: state.cameraY, animating: Boolean(state.frame),
+      loading: state.loading, loadReason: state.loadReason, loadStarted: state.loadStarted, readyAt: state.readyAt
     }),
     renderAt: time => draw(time)
   };
   resize();
+  scheduleWarmup();
 }

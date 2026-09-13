@@ -2,6 +2,7 @@ import { siteContent } from "./content.js";
 import { applyNavigationOrder } from "./navigation.js";
 import { bindCitations } from "./citations.js";
 import { bindFooterField } from "./footer-field.js";
+import { heroMarkup, newsMarkup } from "./hero-markup.js";
 
 const state = {
   navItems: siteContent.navigation,
@@ -84,41 +85,13 @@ function renderNavigation() {
 }
 
 function renderHero() {
-  if (siteContent.team.titleLines?.length) {
-    teamName.replaceChildren(...siteContent.team.titleLines.map(line => {
-      const span = document.createElement("span");
-      span.textContent = line;
-      return span;
-    }));
-  } else {
-    teamName.textContent = siteContent.team.name;
-  }
-
+  const copy = heroMarkup(siteContent.team);
+  teamName.innerHTML = copy.title;
   document.querySelector(".hero__eyebrow").textContent = siteContent.team.englishName;
-  if (siteContent.team.researchDirections?.length) {
-    const directions = document.createElement("ul");
-    directions.className = "hero__subtitle hero__directions";
-    directions.dataset.teamDirections = "";
-    directions.replaceChildren(...siteContent.team.researchDirections.map(direction => {
-      const li = document.createElement("li");
-      li.textContent = direction;
-      return li;
-    }));
-    teamEnglish.replaceWith(directions);
-  } else {
-    teamEnglish.textContent = siteContent.team.englishName;
-  }
+  teamEnglish.outerHTML = copy.directions;
   teamSummary.textContent = siteContent.team.summary;
-  if (siteContent.team.recruitment?.text) {
-    const recruitment = document.createElement("p");
-    recruitment.className = "hero__recruitment";
-    recruitment.dataset.recruitment = "";
-    const text = document.createElement(siteContent.team.recruitment.href ? "a" : "span");
-    text.textContent = siteContent.team.recruitment.text;
-    if (siteContent.team.recruitment.href) text.href = siteContent.team.recruitment.href;
-    recruitment.append(text);
-    teamSummary.after(recruitment);
-  }
+  document.querySelector("[data-recruitment]")?.remove();
+  teamSummary.insertAdjacentHTML("afterend", copy.recruitment);
   siteMarkLabel.textContent = siteContent.team.markLabel;
   dockText.textContent = siteContent.team.acronym;
   monogramTextNodes.forEach((node) => {
@@ -131,33 +104,8 @@ function renderHero() {
 function renderNews() {
   newsList.tabIndex = 0;
   newsList.setAttribute("aria-label", "News");
-  newsList.innerHTML = state.newsItems
-    .map(
-      (item, index) => {
-        const isLead = index === 0;
-        return `
-        <li class="news-item${isLead ? " news-item--lead" : " news-item--secondary"}">
-          <span class="news-item__marker" aria-hidden="true"></span>
-          <div class="news-item__body">
-            <div class="news-item__signal">${isLead ? "Current signal" : "Prior note"}</div>
-            <div class="news-item__date">${item.date}</div>
-            <div class="news-item__title">
-              ${
-                item.href
-                  ? `<a class="news-item__title-link" href="${item.href}" target="_blank" rel="noreferrer">${item.title}</a>`
-                  : item.title
-              }
-            </div>
-            ${item.source ? `<div class="news-item__source">${item.source}</div>` : ""}
-          </div>
-        </li>
-      `;
-      }
-    )
-    .join("");
-
+  newsList.innerHTML = newsMarkup(state.newsItems);
   newsCount.textContent = `${state.newsItems.length} items`;
-  if (!state.newsItems.length) newsList.innerHTML = '<li class="news-empty">No news at present.</li>';
 }
 
 function renderMembers() {
@@ -559,7 +507,8 @@ function updateFloatingMonogram() {
   const dockX = geometry.dockX;
   const dockY = geometry.dockY;
   const x = originX + (dockX - originX) * progress;
-  const y = originY + (dockY - originY) * progress;
+  // A higher, compact origin must not overshoot the header before docking.
+  const y = Math.max(dockY, originY + (dockY - originY) * progress);
   const originScale = geometry.originWidth / floatingMonogramSize;
   const targetScale = geometry.dockWidth / floatingMonogramSize;
   const scale = originScale + (targetScale - originScale) * progress;
@@ -644,6 +593,16 @@ function bindFloatingMonogram() {
 }
 
 
+function revealHomepage() {
+  const entrance = window.__maccEntrance;
+  if (!entrance || document.documentElement.dataset.entrance !== "pending") return;
+  const buffer = Math.max(0, 180 - (performance.now() - entrance.started));
+  Promise.all([document.fonts.ready, new Promise(resolve => setTimeout(resolve, buffer))]).then(() => {
+    // Two frames let hydrated text and scene geometry settle before the fade starts.
+    requestAnimationFrame(() => requestAnimationFrame(() => entrance.finish(true)));
+  });
+}
+
 function init() {
   renderNavigation();
   renderHero();
@@ -662,6 +621,7 @@ function init() {
   cacheLayoutMetrics();
   updatePageVisualRelease();
   scheduleVisualFrame();
+  revealHomepage();
 }
 
 init();

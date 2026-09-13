@@ -4,6 +4,8 @@ import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse, serialize, serializeOuter } from "parse5";
+import { siteContent } from "../scripts/content.js";
+import { prerenderHomepage } from "./prerender-homepage.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const sourceRoot = process.argv[2];
@@ -130,7 +132,7 @@ for (const variant of variants) {
   appendHtml(body, '<script src="./scripts/concepts/sphere-material.js"></script>');
   appendHtml(body, `<script src="./scripts/concepts/${variant}.js"></script>`);
 
-  const output = ("<!DOCTYPE html>\n" + serialize(page).replace(/^<!DOCTYPE html>\s*/i, "")).replace(/[\t ]+$/gm, "").trimEnd() + "\n";
+  const output = prerenderHomepage(serialize(page), siteContent);
   await writeFile(path.join(root, `${variant}.html`), output);
   if (variant === defaultConcept) await writeFile(path.join(root, "index.html"), output);
   manifest.push({ variant, sourceSha256: hash(source), animationSha256: hash(animation),

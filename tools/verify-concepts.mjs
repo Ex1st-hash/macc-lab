@@ -29,6 +29,16 @@ const viewports = [{ width: 1318, height: 680 }, { width: 1440, height: 800 }, {
   .filter(viewport => !process.argv.includes("--mobile") || viewport.width < 701);
 const report = [];
 
+const settleCanvas = async page => {
+  // Background tabs can defer ResizeObserver after the reference receives layout CSS.
+  await page.bringToFront();
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector("[data-topology-canvas]");
+    const rect = canvas.getBoundingClientRect();
+    return canvas.width === Math.round(rect.width) && canvas.height === Math.round(rect.height);
+  });
+};
+
 const inspect = (page, trimClippedEdge = false) => page.evaluate(trimClippedEdge => {
   const canvas = document.querySelector("[data-topology-canvas]");
   const paintRect = canvas.getBoundingClientRect();
@@ -88,8 +98,8 @@ try {
       }, { intro, variant });
       await reference.addStyleTag({ path: path.join(root, "styles", "client-refinements.css") });
       await reference.evaluate(() => document.fonts.ready);
-      await reference.waitForTimeout(50);
-      await actual.bringToFront();
+      await settleCanvas(reference);
+      await settleCanvas(actual);
       const orbitBleed = variant === "C-V3" && viewport.width >= 1000;
       const live = await inspect(actual, orbitBleed);
       const centered = viewport.width > 1100 && /^(A-V[123]|B-V3)$/.test(variant);
@@ -99,6 +109,7 @@ try {
           frame.style.width = `${rect.width}px`;
           frame.style.height = `${rect.height}px`;
         }, live.rect);
+        await settleCanvas(reference);
         await reference.waitForFunction(([width, height]) => {
           const canvas = document.querySelector("[data-topology-canvas]");
           return canvas.width === width && canvas.height === height;

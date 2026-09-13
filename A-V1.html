@@ -1,13 +1,39 @@
-<!DOCTYPE html>
-<!-- MILESTONE BASELINE: CONCEPT 02 / MONUMENTAL HOMEPAGE BEFORE EXPERIMENTAL INSPIRATION PASS --><html lang="en"><head>
+<!DOCTYPE html><!-- MILESTONE BASELINE: CONCEPT 02 / MONUMENTAL HOMEPAGE BEFORE EXPERIMENTAL INSPIRATION PASS --><html lang="en"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MACC | A-V1</title>
+  <script id="macc-entrance">(() => {
+  const root = document.documentElement;
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  if (motion.matches || (location.hash && location.hash !== "#home")) return;
+  const events = ["wheel", "touchstart", "pointerdown", "keydown", "scroll", "hashchange"];
+  let timer;
+  const cancel = () => finish(false);
+  const restore = event => { if (event.persisted) cancel(); };
+  function finish(animate = false) {
+    if (root.dataset.entrance !== "pending" && root.dataset.entrance !== "revealing") return;
+    clearTimeout(timer);
+    if (animate && root.dataset.entrance === "pending") {
+      root.dataset.entrance = "revealing";
+      timer = setTimeout(cancel, 680);
+      return;
+    }
+    root.dataset.entrance = "ready";
+    events.forEach(name => window.removeEventListener(name, cancel));
+    window.removeEventListener("pageshow", restore);
+    motion.removeEventListener("change", cancel);
+  }
+  window.__maccEntrance = { started: performance.now(), finish };
+  root.dataset.entrance = "pending";
+  timer = setTimeout(cancel, 1800);
+  events.forEach(name => window.addEventListener(name, cancel, { passive: true }));
+  window.addEventListener("pageshow", restore);
+  motion.addEventListener("change", cancel);
+})();</script><title>MACC | A-V1</title>
   <meta name="description" content="Research homepage for the Multi-Agent Cognition and Collaboration Team.">
   <link rel="stylesheet" href="./styles/tokens.css">
   <link rel="stylesheet" href="./styles/base.css">
   <link rel="stylesheet" href="./styles/home.css">
-<link rel="icon" href="data:,"><link rel="stylesheet" href="./styles/concepts/source.css"><link rel="stylesheet" href="./styles/center-concepts.css"><link rel="stylesheet" href="./styles/client-refinements.css"></head>
+<link rel="icon" href="data:,"><link rel="stylesheet" href="./styles/concepts/source.css"><link rel="stylesheet" href="./styles/center-concepts.css"><link rel="stylesheet" href="./styles/client-refinements.css"><link rel="modulepreload" href="./scripts/app.js"><link rel="modulepreload" href="./scripts/content.js"><link rel="modulepreload" href="./scripts/hero-markup.js"></head>
 <body data-center-concept="A-V1">
   <a class="skip-link" href="#home">Skip to content</a>
 
@@ -15,18 +41,18 @@
     <div class="site-header__inner">
       <a class="site-mark" href="#home" aria-label="Back to home">
         <span class="site-mark__dock" data-monogram-dock="">
-          <span class="site-mark__dock-text" data-site-dock-text=""></span>
+          <span class="site-mark__dock-text" data-site-dock-text="">MACC</span>
         </span>
-        <span class="site-mark__label" data-site-mark-label=""></span>
+        <span class="site-mark__label" data-site-mark-label="">Multi-Agent Cognition and Collaboration</span>
       </a>
       <nav class="site-nav" aria-label="Main navigation">
-        <ul class="site-nav__list" data-nav-list=""></ul>
+        <ul class="site-nav__list" data-nav-list=""><li><a class="site-nav__link" href="#home" data-nav-link="home">Home</a></li><li><a class="site-nav__link" href="#members" data-nav-link="members">Members</a></li><li><a class="site-nav__link" href="#publications" data-nav-link="publications">Publications</a></li><li><a class="site-nav__link" href="#projects" data-nav-link="projects">Projects</a></li><li><a class="site-nav__link" href="#patents" data-nav-link="patents">Systems</a></li><li><a class="site-nav__link" href="#awards" data-nav-link="awards">Awards</a></li></ul>
       </nav>
     </div>
   </header>
 
   <div class="floating-monogram" data-floating-monogram="" aria-hidden="true">
-    <span data-team-acronym=""></span>
+    <span data-team-acronym="">MACC</span>
   </div>
 
 
@@ -49,10 +75,10 @@
       <div class="hero__grid">
         <div class="hero__intro">
           <div class="hero__monogram-anchor" aria-hidden="true" data-monogram-origin="" data-team-acronym="">MACC</div>
-          <p class="hero__eyebrow">Multi-Agent Systems / Cognition / Collaboration</p>
-          <h1 class="hero__title" data-team-name=""></h1>
-          <p class="hero__subtitle" data-team-english=""></p>
-          <p class="hero__summary" data-team-summary=""></p>
+          <p class="hero__eyebrow">Multi-Agent Cognition and Collaboration Team</p>
+          <h1 class="hero__title" data-team-name=""><span>多智能体认知</span><span>与协同团队</span></h1>
+          <ul class="hero__subtitle hero__directions" data-team-english="" data-team-directions=""><li>多智能体系统</li><li>认知与推理</li><li>协同智能</li></ul>
+          <p class="hero__summary" data-team-summary="">We investigate how multiple agents perceive, reason, and coordinate to build reliable intelligent systems across dynamic, distributed environments.</p><p class="hero__recruitment" data-recruitment=""><a href="#contact">招生示例：欢迎对多智能体与协同智能感兴趣的同学联系团队。</a></p>
         </div>
 
         <div class="tides-study">
@@ -70,9 +96,89 @@
           <div class="news-panel">
             <div class="news-panel__header">
               <h2 class="news-panel__title" id="news-title">News</h2>
-              <span class="news-panel__count" data-news-count=""></span>
+              <span class="news-panel__count" data-news-count="">10 items</span>
             </div>
-            <ol class="news-panel__list" data-news-list=""></ol>
+            <ol class="news-panel__list" data-news-list="" tabindex="0" aria-label="News"><li class="news-item news-item--lead">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Current signal</div>
+      <div class="news-item__date">2025-08-30</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/from-research-to-community-impact--ccds-phd-researcher-alysa-tan-joins-sg100-women-in-tech-2025" target="_blank" rel="noreferrer">TrustFUL's PhD student Alysa Tan joins SG100 Women in Tech 2025.</a></div>
+      <div class="news-item__source">CCDS News, NTU, Singapore</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2025-03-07</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/ccds-wins-prestigious-ai-award-for-revolutionising-medical-quality-control" target="_blank" rel="noreferrer">TrustFUL's paper won the Innovative Application of AI Award from AAAI in 2025.</a></div>
+      <div class="news-item__source">CCDS News, NTU, Singapore</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2024-09-30</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/38-ccds-faculty-listed-in-stanford-university's-top-2-scientists-study-(2024)" target="_blank" rel="noreferrer">TrustFUL faculty members were listed in Stanford University's Top 2% Scientists' Study (2024).</a></div>
+      <div class="news-item__source">CCDS News, NTU, Singapore</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2024-02-28</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/three-innovative-application-of-ai-awards-from-aaai-2024" target="_blank" rel="noreferrer">TrustFUL's papers won three Innovative Application of AI Awards from AAAI in 2024.</a></div>
+      <div class="news-item__source">SCSE News, NTU, Singapore</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2023-05-24</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://mp.weixin.qq.com/s?__biz=MzkyNjI3NjEwOA==&amp;mid=2247504008&amp;idx=1&amp;sn=214da74f4df5b3f32f082820cba57061&amp;chksm=c23b5febf54cd6fdc9b814a8f331ca36bae60db5b65254d8ccd87e451c2e80d9aa00eb9d6e1d&amp;mpshare=1&amp;scene=2&amp;srcid=0524eWmyoG7ApvZc5hssDlPY&amp;sharer_sharetime=1684918664042&amp;sharer_shareid=1f4cad3e6e5bb1c6abd54862fa308b1a#rd" target="_blank" rel="noreferrer">The FATE open-source academic committee was formally launched to strengthen industry-academia collaboration.</a></div>
+      <div class="news-item__source">FATE Open Source Community</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2023-02-28</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/nap-yu-han-conferred-the-jci-ten-outstanding-young-persons-(toyp)-of-singapore-(scientific-technological-development)-award-2022" target="_blank" rel="noreferrer">NAP Yu Han was conferred the JCI Ten Outstanding Young Persons of Singapore Award 2022.</a></div>
+      <div class="news-item__source">SCSE News, NTU, Singapore</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2023-02-23</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/appointment-to-named-chair-professorship" target="_blank" rel="noreferrer">Prof Dusit Niyato was appointed to a named chair professorship.</a></div>
+      <div class="news-item__source">SCSE News, NTU, Singapore</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2023-02-16</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/scse-s-paper-won-the-innovative-application-of-ai-award-from-aaai" target="_blank" rel="noreferrer">TrustFUL's paper won the Innovative Application of AI Award from AAAI in 2023.</a></div>
+      <div class="news-item__source">SCSE News, NTU, Singapore</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2023-01-05</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/31-scse-faculty-listed-in-stanford-university's-top-2-scientists-study-(2022)" target="_blank" rel="noreferrer">TrustFUL faculty members were listed in Stanford University's Top 2% Scientists' Study (2022).</a></div>
+      <div class="news-item__source">SCSE News, NTU, Singapore</div>
+    </div>
+  </li><li class="news-item news-item--secondary">
+    <span class="news-item__marker" aria-hidden="true"></span>
+    <div class="news-item__body">
+      <div class="news-item__signal">Prior note</div>
+      <div class="news-item__date">2022-07-26</div>
+      <div class="news-item__title"><a class="news-item__title-link" href="https://www.ntu.edu.sg/computing/news-events/news/detail/two-acm-sigsoft-distinguished-paper-awards-at-issta-2022" target="_blank" rel="noreferrer">TrustFUL's paper won the ACM SIGSOFT Distinguished Paper Award at ISSTA 2022.</a></div>
+      <div class="news-item__source">SCSE News, NTU, Singapore</div>
+    </div>
+  </li></ol>
 
           </div>
         </aside>
@@ -157,4 +263,5 @@
   <script type="module" src="./scripts/app.js"></script>
 
 
-<script src="./scripts/center-concepts.js"></script><script src="./scripts/concepts/sphere-material.js"></script><script src="./scripts/concepts/A-V1.js"></script></body></html>
+<script src="./scripts/center-concepts.js"></script><script src="./scripts/concepts/sphere-material.js"></script><script src="./scripts/concepts/A-V1.js"></script>
+</body></html>

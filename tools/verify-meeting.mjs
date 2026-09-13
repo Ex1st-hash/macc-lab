@@ -124,8 +124,7 @@ try {
     const drawn = await footer(page);
     assert(drawn.lit > 100 && drawn.state.drawnEdges > 0);
     await page.waitForTimeout(700);
-    if (viewport.width > 760) assert.notEqual((await footer(page)).hash, drawn.hash, "Footer animation stopped");
-    else assert.equal((await footer(page)).hash, drawn.hash, "Mobile footer should keep its original static policy");
+    assert.notEqual((await footer(page)).hash, drawn.hash, "Footer animation stopped");
     if (viewport.width > 700) assert.equal(drawn.sceneOpacity, 0);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "Page overflows horizontally");
     assert.deepEqual(errors, []);

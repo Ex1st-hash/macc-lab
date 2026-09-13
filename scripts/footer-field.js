@@ -28,7 +28,7 @@ export function bindFooterField(element, initialCanvas, reducedMotion) {
   let entranceObserver;
   const positions = [];
   const palette = [[0.58, 0.84, 0.79], [0.86, 0.75, 0.53]];
-  const canAnimate = () => state.visible && !state.lost && !document.hidden && !reducedMotion.matches && innerWidth > 760 && state.renderer === "webgl";
+  const canAnimate = () => state.visible && !state.lost && !document.hidden && !reducedMotion.matches && state.renderer === "webgl";
 
   function buildTopology() {
     state.nodes = [];
@@ -162,14 +162,15 @@ export function bindFooterField(element, initialCanvas, reducedMotion) {
       fallback.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     if (changed || !state.nodes.length) buildTopology();
-    draw(reducedMotion.matches || innerWidth <= 760 ? 0 : state.time);
+    draw(reducedMotion.matches ? 0 : state.time);
     syncAnimation();
   }
 
   function tick(timestamp) {
     state.frame = 0;
     if (!canAnimate()) return;
-    if (timestamp - state.lastFrame >= 1000 / 40) {
+    const frameInterval = 1000 / (state.width <= 760 ? 30 : 40);
+    if (timestamp - state.lastFrame >= frameInterval) {
       state.time += state.lastFrame ? Math.min(timestamp - state.lastFrame, 70) / 1000 : 0;
       state.lastFrame = timestamp;
       draw();
@@ -183,7 +184,7 @@ export function bindFooterField(element, initialCanvas, reducedMotion) {
     } else {
       cancelAnimationFrame(state.frame);
       state.frame = 0;
-      if (state.visible) draw(reducedMotion.matches || innerWidth <= 760 ? 0 : state.time);
+      if (state.visible) draw(reducedMotion.matches ? 0 : state.time);
     }
   }
 

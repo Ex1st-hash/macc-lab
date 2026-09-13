@@ -53,8 +53,8 @@ const reveal = async page => {
   await page.waitForTimeout(600);
 };
 try {
-  for (const viewport of [{ width: 1440, height: 1000 }, { width: 1318, height: 680 }, { width: 1920, height: 1080 }, { width: 820, height: 900 }, { width: 390, height: 844 }, { width: 1280, height: 800, dpr: 2 }]) {
-    const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: viewport.dpr ?? 1 });
+  for (const viewport of [{ width: 1440, height: 1000 }, { width: 1318, height: 680 }, { width: 1920, height: 1080 }, { width: 820, height: 900 }, { width: 390, height: 844 }, { width: 430, height: 932, dpr: 3 }, { width: 1280, height: 800, dpr: 2 }]) {
+    const page = await browser.newPage({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: viewport.dpr ?? 1, isMobile: viewport.width <= 760, hasTouch: viewport.width <= 760 });
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => { if (message.type() === "error" && /shader|WebGLProgram/.test(message.text())) errors.push(message.text()); });
@@ -71,8 +71,8 @@ try {
     assert(before.depthRange[1] - before.depthRange[0] > 180, "Insufficient 3D depth");
     await page.waitForTimeout(650);
     const after = await sample(page);
-    if (viewport.width > 760) assert.notEqual(before.hash, after.hash, "Topology is not moving");
-    else assert.equal(before.hash, after.hash, "Mobile static policy changed");
+    assert.notEqual(before.hash, after.hash, "Topology is not moving");
+    assert(after.animating && after.time > before.time, "Animation clock did not advance");
     await page.screenshot({ path: path.join(output, `footer-${viewport.width}.png`) });
     await page.locator("[data-footer-observer]").screenshot({ path: path.join(output, `field-${viewport.width}.png`) });
     if (viewport.width > 760) {
@@ -95,6 +95,20 @@ try {
       assert.equal(frame.drawnEdges, before.drawnEdges);
       assert(frame.lit > 1000 && frame.depthRange[1] < 200 && frame.depthRange[0] > -210, "Long-running topology lost its bounds");
     }
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.waitForTimeout(200);
+    const resumed = await sample(page);
+    await page.waitForTimeout(450);
+    assert(resumed.animating && (await sample(page)).time > resumed.time, "Animation did not resume after reduced motion");
+    await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
+    await page.waitForFunction(() => !window.__maccFooterField.getState().animating);
+    const offscreen = await sample(page);
+    await page.waitForTimeout(300);
+    assert.equal((await sample(page)).time, offscreen.time, "Offscreen animation kept running");
+    await reveal(page);
+    const returned = await sample(page);
+    await page.waitForTimeout(400);
+    assert(returned.animating && (await sample(page)).time > returned.time, "Animation did not resume on return");
     assert.deepEqual(errors, []);
     report.push({ viewport, before, after });
     console.log(`PASS ${viewport.width}: transparent edges, 3D depth, motion, parallax, reduced motion, 4-hour bounds`);
@@ -110,6 +124,10 @@ try {
     const current = await sample(page);
     assert(Math.abs(current.width - current.viewport) < 1 && Math.abs(current.left) < 1);
     assert(current.lit > 1000);
+    await page.waitForTimeout(300);
+    const next = await sample(page);
+    assert(next.animating && next.time > current.time, "Resize stopped animation");
+    assert.notEqual(next.hash, current.hash, "Resize left a static topology");
   }
   await page.close();
   console.log("PASS continuous narrow/wide viewport restoration");

@@ -1,6 +1,9 @@
 name: Publish Website
 on:
   workflow_dispatch:
+  push:
+    branches: [master]
+    paths: [.github/workflows/pages.yml]
 permissions:
   contents: read
 concurrency:

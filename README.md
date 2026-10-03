@@ -33,10 +33,13 @@
 - `index.html`、`A-V1.html` 等：生成的完整页面
 - `templates/homepage.html`: 共享页面结构模板
 - `styles/`: 样式文件
-- `scripts/content.js`: 可维护的示例内容数据
+- `content/publications.js`: 手动维护的完整论文总表，页面按日期显示最新 15 条
+- `content/site.js`: 团队、新闻、成员、项目、应用系统、获奖及联系资料
+- `scripts/content.js`: 读取内容文件的程序入口，日常不编辑
+- `scripts/publications.js`: 论文日期校验与最新 15 条选择逻辑
 - `scripts/app.js`: 数据渲染与导航交互
 - `scripts/navigation.js`: 导航配置与正文同步排序
-- `scripts/citations.js`: 引用弹窗、复制与导出
+- `scripts/citations.js`: GB/T 7714、BibTeX 引用弹窗与复制
 - `scripts/center-concepts.js`: 动效层位置与响应式布局对接
 - `scripts/concepts/`: 七份导入动画、共用球体光照与来源校验值
 - `styles/concepts/`: 从原方案提取的视觉样式
@@ -46,12 +49,18 @@
 
 ## 后续怎么改内容
 
-优先只改 `scripts/content.js`：
+优先只改 `content/` 下的数据文件，详细填写模板见 [甲方维护说明](./docs/甲方维护说明.md)：
 
 - 团队名称、英文名、简介、招生及底部联系信息
 - 首页新闻
 - 成员分组、统一底色和透明 PNG
-- 论文、项目、专利、获奖内容
+- 论文总表、项目、应用系统、获奖内容
+
+论文填写在 `content/publications.js`，其余栏目填写在 `content/site.js`。论文总表保留全部记录，`date` 推荐填写 `YYYY-MM-DD`，也支持 `YYYY-MM` 或 `YYYY`；页面自动按日期降序显示最新 15 条，不足则全部显示，同日按文件顺序。只填年/月时按该年/月第一天排序；不接入外部学术平台，不自动删除旧论文。
+
+更新后运行 `npm run check:content` 检查并查看排序结果，运行 `npm run build:hero` 同步首页静态文字，然后刷新本地预览。发布构建会校验完整论文清单，错误数据会阻止发布。`npm run test:publications` 可运行论文专项测试，需要本地预览服务及 Playwright 浏览器。
+
+`content/` 会公开部署，未展示的旧论文也可从内容文件读取；不要放入内部资料或密钥。提交、推送后仍需手动运行 Publish Website，才会更新线上内容。
 
 如果只是更新内容，一般不需要改 `index.html` 或 `styles/`。
 

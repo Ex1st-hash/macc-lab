@@ -2,7 +2,8 @@ import { siteContent } from "./content.js";
 import { applyNavigationOrder } from "./navigation.js";
 import { bindCitations } from "./citations.js";
 import { bindFooterField } from "./footer-field.js";
-import { heroMarkup, newsMarkup } from "./hero-markup.js";
+import { escapeHTML, heroMarkup, newsMarkup } from "./hero-markup.js";
+import { publicationErrors, selectLatestPublications } from "./publications.js";
 
 const state = {
   navItems: siteContent.navigation,
@@ -220,11 +221,15 @@ function renderFooter() {
 }
 
 function renderStackList(items, container) {
+  if (container === publicationsList && !items.length) {
+    container.innerHTML = '<p class="publications-empty">No publications at present.</p>';
+    return;
+  }
   container.innerHTML = items
     .map(
       (item, index) => `
         <article class="stack-item">
-          <div class="stack-item__meta">${item.meta}${container === publicationsList ? `
+          <div class="stack-item__meta">${escapeHTML(item.meta)}${container === publicationsList ? `
             <div><button class="citation-trigger" type="button" data-cite-index="${index}">
               <span class="ui-icon ui-icon--quote" aria-hidden="true"></span>Cite
             </button></div>` : ""}</div>
@@ -232,11 +237,11 @@ function renderStackList(items, container) {
             <h3 class="stack-item__title">
               ${
                 item.href
-                  ? `<a href="${item.href}" target="_blank" rel="noreferrer">${item.title}</a>`
-                  : item.title
+                  ? `<a href="${escapeHTML(item.href)}" target="_blank" rel="noreferrer">${escapeHTML(item.title)}</a>`
+                  : escapeHTML(item.title)
               }
             </h3>
-            <p class="stack-item__summary">${item.summary}</p>
+            <p class="stack-item__summary">${escapeHTML(item.summary)}</p>
           </div>
         </article>
       `
@@ -608,8 +613,11 @@ function init() {
   renderHero();
   renderMembers();
   renderFooter();
-  renderStackList(siteContent.publications, publicationsList);
-  bindCitations(publicationsList, siteContent.publications);
+  const errors = publicationErrors(siteContent.publications);
+  if (errors.length) console.warn("Invalid publications omitted. Run npm run check:content.\n" + errors.join("\n"));
+  const latestPublications = selectLatestPublications(siteContent.publications);
+  renderStackList(latestPublications, publicationsList);
+  bindCitations(publicationsList, latestPublications);
   bindPublicationReadingGuide();
   renderCardGrid(siteContent.projects, projectsGrid, "project-card");
   renderStackList(siteContent.patents, patentsList);

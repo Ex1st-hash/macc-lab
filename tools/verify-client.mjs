@@ -38,17 +38,35 @@ try {
     assert.equal(await page.locator("#patents .stack-item__summary").first().evaluate(el => getComputedStyle(el).fontStyle), "normal");
     assert.equal(await page.locator("#patents [data-cite-index]").count(), 0);
     assert.equal(await page.locator("#publications [data-cite-index]").count(), 7);
+    assert.equal(await page.locator(".tides-legend").count(), 0);
+    assert.equal(await page.locator(".motion-toggle").count(), 1);
+    const measures = await page.locator("#publications .stack-item").first().evaluate(card => {
+      const title = card.querySelector(".stack-item__title");
+      const summary = card.querySelector(".stack-item__summary");
+      return [title.offsetWidth / title.parentElement.clientWidth, summary.offsetWidth / summary.parentElement.clientWidth];
+    });
+    const expected = viewport.width > 700 ? [0.6, 0.8] : [1, 1];
+    measures.forEach((value, index) => assert(Math.abs(value - expected[index]) < 0.01, "Publication measure differs from client proportions"));
+    const gap = await page.evaluate(() => {
+      const hero = document.querySelector("#home");
+      const grid = hero.querySelector(".hero__grid");
+      return hero.getBoundingClientRect().bottom - grid.getBoundingClientRect().bottom + parseFloat(getComputedStyle(hero.nextElementSibling).paddingTop);
+    });
+    assert(gap <= 82, "Excess blank space remains after the hero");
+    assert((await page.request.get(`${baseURL}/assets/award-laurel.svg`)).ok());
+    assert((await page.locator(".award-card").first().evaluate(el => getComputedStyle(el, "::before").maskImage)).includes("award-laurel.svg"));
     await page.screenshot({ path: path.join(output, `home-${viewport.width}.png`) });
     await page.locator("[data-cite-index='0']").click();
     assert(await page.locator(".citation-dialog__example").isVisible());
-    assert.equal(await page.locator(".citation-row").count(), 4);
+    assert.deepEqual(await page.locator(".citation-row__label").allTextContents(), ["GB/T 7714", "BibTeX"]);
+    assert.equal(await page.locator(".citation-dialog a").count(), 0);
     await page.keyboard.press("Escape");
     assert(await page.locator("[data-cite-index='0']").evaluate(el => el === document.activeElement));
 
     // The client-supplied example is a test fixture, never inserted into their publication list.
     await context.route("**/scripts/content.js", route => route.fulfill({
       contentType: "application/javascript; charset=utf-8",
-      body: `${content}\nsiteContent.publications[0] = ${JSON.stringify(example)};\nsiteContent.navigation = ${JSON.stringify(order)}.map(id => siteContent.navigation.find(item => item.id === id));`
+      body: `${content}\nsiteContent.publications[0] = ${JSON.stringify(example)};\nsiteContent.navigation = ${JSON.stringify(order)}.map(id => siteContent.navigation.find(item => item.id === id));\nsiteContent.members.push(...Array.from({ length: 5 }, (_, index) => ({ ...siteContent.members[0], name: 'Additional Teacher ' + (index + 1) })));`
     }));
     await page.goto(`${baseURL}/?client-fixture=1#publications`, { waitUntil: "networkidle" });
     await page.evaluate(() => document.fonts.ready);
@@ -56,10 +74,26 @@ try {
     assert.deepEqual(await page.locator("[data-nav-link]").evaluateAll(nodes => nodes.map(node => node.dataset.navLink)), order);
     assert.equal(await page.locator("#awards .section-head__eyebrow").textContent(), "Section 01");
     assert.equal(await page.locator("#members .section-head__eyebrow").textContent(), "Section 03");
+    const roster = await page.locator('[data-member-group="teachers"] .member-card').evaluateAll(cards => cards.map(card => {
+      const rect = card.getBoundingClientRect();
+      return { x: rect.left, y: rect.top, bottom: rect.bottom };
+    }));
+    assert.equal(roster.length, 9, "Additional members were dropped");
+    const columns = viewport.width > 1100 ? 4 : 2;
+    roster.forEach((card, index) => {
+      const rowStart = Math.floor(index / columns) * columns;
+      assert(Math.abs(card.y - roster[rowStart].y) < 1, "Members did not share their row");
+      if (index >= columns) assert(card.y >= roster[index - columns].bottom, "Member rows overlap");
+    });
+    const nextGroup = await page.locator('[data-member-group="collaborators"]').boundingBox();
+    assert(nextGroup.y > roster[8].bottom, "Next group started before all members were displayed");
+    await page.locator('[data-member-group="teachers"]').screenshot({ path: path.join(output, `members-nine-${viewport.width}.png`) });
+    await page.locator('.award-card').first().screenshot({ path: path.join(output, `award-${viewport.width}.png`) });
+    await page.locator('[data-nav-link="publications"]').click();
     await page.waitForFunction(() => document.querySelector('[data-nav-link="publications"]').getAttribute("aria-current") === "page");
     await page.screenshot({ path: path.join(output, `publications-${viewport.width}.png`) });
     await page.locator("[data-cite-index='0']").click();
-    assert.equal(await page.locator(".citation-row").count(), 4);
+    assert.equal(await page.locator(".citation-row").count(), 2);
     assert.equal(await page.locator(".citation-dialog__paper").textContent(), example.title);
     const fits = await page.locator(".citation-dialog").evaluate(el => {
       const r = el.getBoundingClientRect();
@@ -70,19 +104,20 @@ try {
     await page.waitForFunction(() => document.querySelector(".citation-dialog__status").textContent === "Citation copied.");
     assert.equal(await page.evaluate(() => navigator.clipboard.readText()), example.citations.gbt7714);
     await page.screenshot({ path: path.join(output, `citation-example-${viewport.width}.png`) });
-    for (let i = 0; i < 9; i++) await page.keyboard.press("Tab");
-    assert(await page.locator(".citation-dialog").evaluate(el => el.contains(document.activeElement)), "Focus escaped dialog");
-    const pendingDownload = page.waitForEvent("download");
-    await page.locator(".citation-dialog__downloads").getByRole("link", { name: "BibTeX", exact: true }).click();
-    const download = await pendingDownload;
-    const destination = path.join(output, `example-${viewport.width}.bib`);
-    await download.saveAs(destination);
-    assert.equal(await readFile(destination, "utf8"), example.citations.bibtex);
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.press("Tab");
+      // Native dialogs may cycle through browser chrome, but never the inert page controls.
+      assert(await page.locator(".citation-dialog").evaluate(el => el.matches(":modal") && (el.contains(document.activeElement) || document.activeElement === document.body)), "Focus entered the inert page");
+    }
+    await page.getByRole("button", { name: "Copy BibTeX citation", exact: true }).click();
+    const copiedBibtex = await page.evaluate(() => navigator.clipboard.readText());
+    assert.equal(copiedBibtex.replace(/\r\n/g, "\n"), example.citations.bibtex);
+    assert.equal(await page.locator(".citation-dialog a").count(), 0);
 
     await page.evaluate(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async () => { throw new Error("Denied in test"); } } }));
-    await page.getByRole("button", { name: "Copy APA citation", exact: true }).click();
+    await page.getByRole("button", { name: "Copy GB/T 7714 citation", exact: true }).click();
     await page.waitForFunction(() => document.querySelector(".citation-dialog__status").textContent === "Clipboard access unavailable.");
-    assert.equal(await page.evaluate(() => getSelection().toString()), example.citations.apa);
+    assert.equal(await page.evaluate(() => getSelection().toString()), example.citations.gbt7714);
     await page.getByRole("button", { name: "Close citation", exact: true }).click();
     await page.locator("[data-cite-index='0']").click();
     await page.mouse.click(2, 2);
@@ -94,7 +129,7 @@ try {
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "Page overflow");
     for (const icon of ["quote", "copy", "x", "check"]) assert((await page.request.get(`${baseURL}/assets/icons/${icon}.svg`)).ok());
     assert.deepEqual(errors, []);
-    console.log(`PASS ${viewport.width}x${viewport.height}: default concept, hero, scoped italics, reordered navigation, citation modal, clipboard, export, focus, example data`);
+    console.log(`PASS ${viewport.width}x${viewport.height}: compact hero, paper proportions, nine-member wrapping, laurel, two citation formats, clipboard, focus, navigation`);
     await context.close();
   }
 } finally {

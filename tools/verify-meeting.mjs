@@ -116,8 +116,9 @@ try {
     await page.screenshot({ path: path.join(output, `members-${viewport.width}.png`) });
     await page.locator("[data-cite-index='0']").click();
     assert(await page.locator(".citation-dialog__example").isVisible());
-    assert.equal(await page.locator(".citation-dialog__downloads a").count(), 4);
-    await page.getByRole("button", { name: "Copy APA citation", exact: true }).click();
+    assert.equal(await page.locator(".citation-dialog__downloads a").count(), 0);
+    assert.deepEqual(await page.locator(".citation-row__label").allTextContents(), ["GB/T 7714", "BibTeX"]);
+    await page.getByRole("button", { name: "Copy GB/T 7714 citation", exact: true }).click();
     assert((await page.evaluate(() => navigator.clipboard.readText())).includes("EXAMPLE ONLY"));
     await page.keyboard.press("Escape");
     await scroll(page, 999999);
@@ -173,8 +174,10 @@ try {
   assert.equal(await deployed.locator("body").getAttribute("data-center-concept"), "C-V3");
   assert.equal(await deployed.locator(".member-group").count(), 3);
   await deployed.locator("[data-cite-index='0']").click();
-  assert.equal(await deployed.locator(".citation-row").count(), 4);
+  assert.equal(await deployed.locator(".citation-row").count(), 2);
+  assert.equal(await deployed.locator(".citation-dialog a").count(), 0);
   await deployed.keyboard.press("Escape");
+  assert((await deployed.request.get(`${baseURL}/${relative}/assets/award-laurel.svg`)).ok());
   for (const variant of ["A-V1", "A-V2", "A-V3", "B-V3", "C-V1", "C-V2", "C-V3"]) {
     assert((await deployed.request.get(`${baseURL}/${relative}/${variant}.html`)).ok());
   }

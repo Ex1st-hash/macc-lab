@@ -17,6 +17,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:navigation
+      - run: node --test tests/publications.test.mjs
       - name: Build static website
         id: build
         run: npm run build:site

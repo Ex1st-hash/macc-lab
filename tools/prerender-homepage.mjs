@@ -51,6 +51,10 @@ export function prerenderHomepage(html, content) {
   const page = parse(html.trimEnd());
   const first = predicate => all(page, predicate)[0];
   const data = name => first(node => attr(node, name) !== undefined);
+  for (const legend of all(page, node => attr(node, "class")?.split(/\s+/).includes("tides-legend"))) replace(legend, "");
+  for (const caption of all(page, node => attr(node, "class")?.split(/\s+/).includes("tides-caption"))) {
+    caption.childNodes = caption.childNodes.filter(node => node.nodeName !== "#text" || node.value.trim());
+  }
   const copy = heroMarkup(content.team);
   setHTML(data("data-team-name"), copy.title);
   setHTML(first(node => attr(node, "class") === "hero__eyebrow"), escapeHTML(content.team.englishName));
@@ -95,7 +99,7 @@ export function prerenderHomepage(html, content) {
     const position = head.childNodes.findIndex(node => node.tagName === "title");
     head.childNodes.splice(position, 0, script);
   }
-  for (const href of ["./scripts/app.js", "./scripts/content.js", "./scripts/hero-markup.js"]) {
+  for (const href of ["./scripts/app.js", "./scripts/content.js", "./scripts/hero-markup.js", "./content/site.js", "./content/publications.js"]) {
     if (first(node => node.tagName === "link" && attr(node, "rel") === "modulepreload" && attr(node, "href") === href)) continue;
     const link = parseFragment(`<link rel="modulepreload" href="${href}">`).childNodes[0];
     link.parentNode = head;

@@ -38,7 +38,7 @@ test("static export includes hero content, one bootstrap, and is idempotent", ()
   const title = all(page, node => attr(node, "data-team-name") !== undefined)[0];
   assert.equal(text(title), siteContent.team.titleLines.join(""));
   assert.equal(all(page, node => attr(node, "class")?.split(" ").includes("news-item")).length, siteContent.news.length);
-  assert.equal(all(page, node => attr(node, "rel") === "modulepreload").length, 3);
+  assert.deepEqual(all(page, node => attr(node, "rel") === "modulepreload").map(node => attr(node, "href")).sort(), ["./content/publications.js", "./content/site.js", "./scripts/app.js", "./scripts/content.js", "./scripts/hero-markup.js"]);
 });
 
 test("static navigation matches reordered sections, and blank copy does not linger", () => {
@@ -52,4 +52,11 @@ test("static navigation matches reordered sections, and blank copy does not ling
   assert.equal(all(page, node => attr(node, "data-recruitment") !== undefined).length, 0);
   assert.equal(all(page, node => attr(node, "data-team-directions") !== undefined).length, 0);
   assert.deepEqual(all(page, node => attr(node, "data-section") !== undefined).map(node => attr(node, "data-section")), ["home", "publications", "members", "projects", "patents", "awards"]);
+});
+
+test("concept imports remove the legend without removing the motion control", () => {
+  const legacy = html.replace('<div class="tides-caption">', '<div class="tides-caption"><ul class="tides-legend"><li>Orbital agents</li><li>Gateways</li><li>Local network</li></ul>');
+  const page = parse(prerenderHomepage(legacy, siteContent));
+  assert.equal(all(page, node => attr(node, "class")?.split(" ").includes("tides-legend")).length, 0);
+  assert.equal(all(page, node => attr(node, "class")?.split(" ").includes("motion-toggle")).length, 1);
 });

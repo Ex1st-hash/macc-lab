@@ -43,6 +43,15 @@ try {
     assert.deepEqual(await page.evaluate(() => [...new Set(window.entranceTrace)]), ["pending", "revealing", "ready"]);
     assert.deepEqual(errors, []);
     await page.screenshot({ path: path.join(output, `${variant}-ready.png`) });
+    const motionTime = () => page.evaluate(() => (window.__coherentTides ?? window.__maccConcept).state.time);
+    await page.locator("[data-motion-toggle]").click();
+    const pausedAt = await motionTime();
+    await page.waitForTimeout(250);
+    assert.equal(await motionTime(), pausedAt, "Pause control no longer stops the scene");
+    await page.locator("[data-motion-toggle]").click();
+    await page.waitForTimeout(300);
+    assert((await motionTime()) > pausedAt, "Resume control no longer starts the scene");
+    await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
     if (variant === "C-V3") {
       const canvas = page.locator("[data-topology-canvas]");
       const hash = () => canvas.evaluate(canvas => {
@@ -70,6 +79,7 @@ try {
       assert.deepEqual(await paper.boundingBox(), paperBounds, "Publication hover moved the card");
       await paper.screenshot({ path: path.join(output, "publication-hover.png") });
       const cite = paper.locator(".citation-trigger");
+      await page.keyboard.press("Tab");
       await cite.focus();
       await page.waitForTimeout(300);
       assert.equal(await cite.evaluate(el => getComputedStyle(el, "::before").opacity), "1");

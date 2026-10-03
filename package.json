@@ -2,6 +2,8 @@
   "name": "macc-homepage-prototype",
   "private": true,
   "scripts": {
+    "check:content": "node tools/check-content.mjs",
+    "test:publications": "node --test tests/publications.test.mjs && node tools/verify-publications.mjs",
     "test:navigation": "node --test tests/navigation.test.mjs",
     "test:client": "node tools/verify-client.mjs",
     "test:monogram": "node tools/verify-monogram.mjs",

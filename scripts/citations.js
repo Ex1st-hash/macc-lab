@@ -1,14 +1,6 @@
 const formats = [
   { id: "gbt7714", label: "GB/T 7714" },
-  { id: "mla", label: "MLA" },
-  { id: "apa", label: "APA" },
   { id: "bibtex", label: "BibTeX" }
-];
-const exports = [
-  { id: "bibtex", label: "BibTeX", extension: "bib" },
-  { id: "endnote", label: "EndNote", extension: "enw" },
-  { id: "ris", label: "RefMan", extension: "ris" },
-  { id: "refworks", label: "RefWorks", extension: "txt" }
 ];
 
 export function bindCitations(container, publications) {
@@ -27,20 +19,13 @@ export function bindCitations(container, publications) {
     <p class="citation-dialog__example" hidden>示例引用：作者、期刊等为占位数据，不可用于学术引用。</p>
     <div class="citation-dialog__formats"></div>
     <p class="citation-dialog__empty" hidden>Citation data is not available yet.</p>
-    <div class="citation-dialog__downloads" hidden></div>
     <p class="citation-dialog__status" role="status" aria-live="polite"></p>`;
   document.body.append(dialog);
 
   const rows = dialog.querySelector(".citation-dialog__formats");
-  const downloads = dialog.querySelector(".citation-dialog__downloads");
   const status = dialog.querySelector(".citation-dialog__status");
   let opener;
-  let objectURLs = [];
   let opening = 0;
-  const releaseDownloads = () => {
-    objectURLs.forEach(url => URL.revokeObjectURL(url));
-    objectURLs = [];
-  };
 
   const copyCitation = async (text, block, button) => {
     const currentOpening = opening;
@@ -70,9 +55,7 @@ export function bindCitations(container, publications) {
     if (!publication) return;
     opener = button;
     opening++;
-    releaseDownloads();
     rows.replaceChildren();
-    downloads.replaceChildren();
     status.textContent = "";
     dialog.querySelector(".citation-dialog__paper").textContent = publication.title;
     dialog.querySelector(".citation-dialog__example").hidden = !publication.citationExample;
@@ -101,19 +84,7 @@ export function bindCitations(container, publications) {
       rows.append(row);
     }
 
-    for (const format of exports) {
-      const text = citations[format.id];
-      if (typeof text !== "string" || !text.trim()) continue;
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
-      objectURLs.push(url);
-      link.href = url;
-      link.download = `citation-${Number(button.dataset.citeIndex) + 1}.${format.extension}`;
-      link.textContent = format.label;
-      downloads.append(link);
-    }
-    dialog.querySelector(".citation-dialog__empty").hidden = rows.childElementCount > 0 || downloads.childElementCount > 0;
-    downloads.hidden = !downloads.childElementCount;
+    dialog.querySelector(".citation-dialog__empty").hidden = rows.childElementCount > 0;
     document.body.classList.add("citation-dialog-open");
     dialog.showModal();
   });
@@ -125,7 +96,6 @@ export function bindCitations(container, publications) {
   });
   dialog.addEventListener("close", () => {
     document.body.classList.remove("citation-dialog-open");
-    releaseDownloads();
     opener?.focus({ preventScroll: true });
   });
 }

@@ -63,6 +63,8 @@ try {
       const initial = await snapshot(page);
       assert.equal(initial.overflow, false, `${variant} ${viewport.width}: horizontal overflow`);
       assert(initial.lit > 1000, "Blank center scene");
+      assert.equal(await page.locator(".tides-legend").count(), 0, "Removed legend returned");
+      assert.equal(await page.locator("[data-motion-toggle]").count(), 1, "Motion control missing");
       assert.equal(initial.countWrap, "nowrap");
       assert(initial.title.y >= initial.english.bottom + 16, "Identity overlaps title");
       if (viewport.width > 760) {
